@@ -39,6 +39,7 @@ from .common import (
     run_arm,
     runs_of,
     score_missing,
+    sync_arms,
 )
 from .history import proposal_history, refused_change_sets
 from .ports import Deps
@@ -211,6 +212,7 @@ def pilot(deps: Deps, experiment_id: str) -> dict[str, list[str]]:
 
 def verify(deps: Deps, experiment_id: str) -> dict[str, Any]:
     candidate = _candidate(deps, experiment_id)
+    sync_arms(deps, experiment_id)
     exp = load_experiment(deps, experiment_id)
     arms = [deps.acceptance.compare["current"].arm, deps.acceptance.compare["candidate"].arm]
     pilot_runs = {arm: runs_of(deps, experiment_id, arm) for arm in arms}
