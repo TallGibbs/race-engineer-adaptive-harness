@@ -207,7 +207,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <div class="table-wrap"><table>
 <tr><th>collection</th><th>purpose</th><th>key fields</th><th>indexes</th></tr>
 <tr><td><code>runs</code></td><td>One document per case run.</td><td><code>_id</code> run_id, harness_version, config_hash, memory_snapshot, arm, experiment_id, model assignment, fastf1_version, status, totals, output</td><td>(experiment_id, arm, case_id); (harness_version, started_at); (case_id, started_at)</td></tr>
-<tr><td><code>events</code></td><td>Every model call, tool call, tool result, message, decision, check, and error, in order.</td><td><code>_id</code> "run_id:seq", type, stage_id, role, content, refs, context_manifest, usage, model, content_sha256</td><td><b>unique</b> <code>run_seq</code> (run_id, seq); <code>run_type</code> (run_id, type); partial <code>control_checks</code> (added in a later commit)</td></tr>
+<tr><td><code>events</code></td><td>Every model call, tool call, tool result, message, decision, check, and error, in order.</td><td><code>_id</code> "run_id:seq", type, stage_id, role, content, refs, context_manifest, usage, model, content_sha256</td><td><b>unique</b> <code>run_seq</code> (run_id, seq); <code>run_type</code> (run_id, type); partial <code>control_checks</code> (content.version, type) where content.control exists</td></tr>
 <tr><td><code>harness_versions</code></td><td>Each configuration and why it exists.</td><td>config, config_hash, parent_id, changes with reasons and cited lesson, validation, status, pinned, control_plan</td><td><b>partial unique</b> <code>one_pinned</code> on pinned where pinned is true; status</td></tr>
 <tr><td><code>lessons</code></td><td>Root causes from the analyze phase.</td><td>defect, cause_category, why_chain, origin_event_id, source_event_ids, text, status, scope, snapshot, embedding</td><td>(scope, status, snapshot, created_at); defect.run_id; Atlas Vector Search <code>lessons_vector</code></td></tr>
 <tr><td><code>evaluations</code></td><td>The evaluator's verdicts.</td><td>run_id, case_id, arm, checks E1 to E8 (PASS, FAIL, HARNESS, NA), opportunities, defects, evaluator_sha256, key_sha256</td><td>run_id; (experiment_id, arm, case_id)</td></tr>
@@ -219,7 +219,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <li><b>Unique (run_id, seq) on events.</b> Event writes are idempotent: a retry that hits a duplicate key counts as already written, so a run's history never has gaps or doubles.</li>
 <li><b>Partial unique index on pinned.</b> The database, not only the code, guarantees that exactly one harness version is pinned. Pinning unpins the old version first. v1 is the pinned version today.</li>
 <li><b>Compound indexes on (experiment_id, arm, case_id).</b> Reports, acceptance, and the report's per-arm tables read by experiment and arm.</li>
-<li><b>Partial index control_checks.</b> Serves the evaluator's control-history query (control outcomes of a pinned version) without scanning every event. The before-and-after explain is added in a later commit (<code>f389c56</code> on branch <code>lane/mongo</code>, not yet on main).</li>
+<li><b>Partial index control_checks.</b> Serves the evaluator's control-history query (control outcomes of a pinned version) without scanning every event. The before-and-after explain is below.</li>
 </ul>
 
 <h3>Vector search with a snapshot pre-filter</h3>
@@ -235,7 +235,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <p>The pre-filter runs inside the index, so a run on memory snapshot M0 cannot see lessons written by a cycle (M1), and unverified root causes are never retrieved. This is what makes the <code>baseline</code> (M0) and <code>memory_only</code> (M1) arms a fair comparison.</p>
 
 <h3>The aggregation used by <code>show cost</code></h3>
-<p>Token cost per arm, role, and model comes from the recorded model-call events, joined to their run for the arm (commit <code>2238abf</code> on branch <code>lane/mongo</code>, not yet on main). The <code>$match</code> is served by the <code>run_type</code> index:</p>
+<p>Token cost per arm, role, and model comes from the recorded model-call events, joined to their run for the arm (<code>python -m adaptive_harness show cost</code>). The <code>$match</code> is served by the <code>run_type</code> index:</p>
 <pre><code>[ { "$match": { "run_id": { "$in": [...] }, "type": "model_call" } },
   { "$lookup": { "from": "runs", "localField": "run_id",
                  "foreignField": "_id", "as": "run" } },
@@ -248,12 +248,36 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
   { "$sort": { "_id.arm": 1, "_id.role": 1, "_id.model": 1 } } ]</code></pre>
 
 <h3>control_checks explain, before and after</h3>
-<p>Added in a later commit.</p>
+<p>The evaluator's control step reads the recorded control outcomes of a pinned version each time it checks a run:</p>
+<pre><code>db.events.find({
+  "type": "check",
+  "content.control": { "$exists": true },
+  "content.version": "v1"
+})</code></pre>
+<p>The index keys both equality fields, and its partial filter is a predicate the query carries verbatim, so it holds only control-outcome events instead of an entry for every message, model-call, and tool event:</p>
+<pre><code>db.events.createIndex(
+  { "content.version": 1, "type": 1 },
+  { name: "control_checks",
+    partialFilterExpression: { "content.control": { "$exists": true } } }
+)</code></pre>
+<p>Both plans are <code>explain</code> with <code>executionStats</code> on the project's Atlas cluster (MongoDB 8.0.32), run read-only while another experiment was writing, so the collection grew between captures. No control outcome had been recorded yet, so both return no documents; what changes is how much the server reads to find that out.</p>
+<div class="table-wrap"><table>
+<tr><th></th><th>before</th><th>after</th></tr>
+<tr><td>indexes on events</td><td>_id_, run_seq, run_type</td><td>_id_, run_seq, run_type, control_checks</td></tr>
+<tr><td>documents in events</td><td>1,952</td><td>2,157</td></tr>
+<tr><td>winning plan</td><td>COLLSCAN</td><td>FETCH &lt;- IXSCAN (control_checks)</td></tr>
+<tr><td>rejected plans</td><td>0</td><td>0</td></tr>
+<tr><td>documents returned</td><td>0</td><td>0</td></tr>
+<tr><td>keys examined</td><td>0</td><td>0</td></tr>
+<tr><td>documents examined</td><td>1,952</td><td>0</td></tr>
+<tr><td>execution time</td><td>2 ms</td><td>1 ms</td></tr>
+</table></div>
+<p>Before the index, every control check scanned the whole collection, and the cost grows with every run recorded. After it, documents examined equal the number of matching control outcomes, independent of how many other events exist. The time difference is small at this size; the documents-examined count is the number that scales. Source: <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/explain_control_checks.md">reports/explain_control_checks.md</a>.</p>
 </section>
 
 <section id="experiments">
 <h2>The experiments</h2>
-<p>Each experiment is one DMAIC cycle on the same six cases. Numbers are taken from the generated reports.</p>
+<p>Each experiment is one DMAIC cycle on the same six cases. Numbers are taken from the generated reports. exp3 also ran a repeat of the development cases under v1 (arm repeat): no check changed between the identical runs. Two exp3 baseline runs (P1, P2) ended HARNESS when the model provider refused requests for insufficient account credit; each was rerun once and the reruns are scored.</p>
 <div class="cards">
 <article class="card">
 <h3>exp1 <span class="tag rej">rejected</span></h3>
@@ -281,17 +305,19 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <dd>Rejected at improve. v1 stays pinned. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp2.md">Report</a></dd>
 </dl>
 </article>
-<article class="card placeholder">
-<h3>exp3 <span class="tag pend">in progress</span></h3>
+<article class="card">
+<h3>exp3 <span class="tag rej">rejected</span></h3>
 <dl>
 <dt>What improve was shown</dt>
-<dd>A third verified root cause for E7 on D2 (measurement), the history of v2 and v3, and the new <code>row_evidence</code> check in the catalog.</dd>
+<dd>A third verified root cause for E7 on D2 (measurement), the proposal history (v2 and v3, both rejected on R2), and the operator-added <code>row_evidence</code> check in the catalog, off by default.</dd>
 <dt>What it proposed</dt>
-<dd>v4: add <code>/checks/row_evidence</code> with enabled true. Validator: valid. (Read-only query at 13:57 EDT.)</dd>
+<dd>v4: add <code>/checks/row_evidence</code> with enabled true, the check the lessons describe. Validator: valid.</dd>
 <dt>Rule verdicts</dt>
-<dd>[exp3: to fill in]</dd>
+<dd>R0 yes; <b>R1 no</b> (control case P1 lost E2 venue and E3 coverage); <b>R2 no</b> (development checks: candidate 11, current 11); R3 yes (10 and 10); R4 yes (1181.9 s against 993.0 s).</dd>
+<dt>What the check did</dt>
+<dd>row_evidence passed in all six candidate runs, so the repair round never fired. The check accepts a race row with at least one race-specific citation; the evaluator's E7 requires every citation to be race-specific. D2's E7 still failed.</dd>
 <dt>Decision</dt>
-<dd>[exp3: to fill in]</dd>
+<dd>Rejected at improve. v1 stays pinned. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp3.md">Report</a></dd>
 </dl>
 </article>
 </div>
@@ -305,7 +331,9 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <tr><td>exp2</td><td>development</td><td>11</td><td>11</td><td>11 (v3)</td></tr>
 <tr><td>exp2</td><td>held-out</td><td>10</td><td>10</td><td>10</td></tr>
 <tr><td>exp2</td><td>control</td><td>9</td><td>10</td><td>10</td></tr>
-<tr><td>exp3</td><td colspan="4">[exp3: to fill in]</td></tr>
+<tr><td>exp3</td><td>development</td><td>11</td><td>11</td><td>11 (v4)</td></tr>
+<tr><td>exp3</td><td>held-out</td><td>10</td><td>10</td><td>10</td></tr>
+<tr><td>exp3</td><td>control</td><td>10</td><td>10</td><td>8</td></tr>
 </table></div>
 </section>
 
@@ -313,10 +341,10 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <h2>What we learned</h2>
 <ul>
 <li><b>The same verified lesson across cycles.</b> Each cycle's analyze phase, working from fresh runs, verified the same root cause: E7 on D2, category measurement. The only S7 check was schema, so nothing tested that each race row cites a same-run tool result about that race. Three such lessons are stored, one per cycle.</li>
-<li><b>Memory alone did not improve results.</b> The <code>memory_only</code> arm (v1 plus the new lessons) passed 11 development checks in both exp1 and exp2, the same as the baseline without them.</li>
-<li><b>Scores vary between identical runs.</b> Under the same v1 configuration, the control cases passed 10, 8, 9, and 10 checks across the four v1 arms of exp1 and exp2 (P1's E2 venue and E3 coverage flipped). This is why R2 compares against the current version run fresh, and why no statistical claim is made.</li>
-<li><b>The evaluator refused two unproven changes.</b> v2 (venue_match) and v3 (source_agreement) each passed 11 development checks against 11, so R2 failed and v1 stayed pinned. The agent had flagged both as uncertain in its own risk statements.</li>
-<li><b>The operator added the check the lessons asked for, and the harness chose to use it.</b> No editable check tested per-row evidence, so after two cycles the operator added <code>row_evidence</code> to the catalog, off by default, with one S7 repair round. In exp3 the improvement agent, not the operator, proposed enabling it (v4). Whether the acceptance rules accept it: [exp3: to fill in].</li>
+<li><b>Memory alone did not improve results.</b> The <code>memory_only</code> arm (v1 plus the new lessons) passed 11 development checks in exp1, exp2, and exp3, the same as the baseline without them.</li>
+<li><b>Scores vary between identical runs.</b> Under the same v1 configuration, the control cases passed 10, 8, 9, 10, 10, and 10 checks across the six scored v1 arms with control cases in exp1 to exp3 (P1's E2 venue and E3 coverage flipped). This is why R2 compares against the current version run fresh, and why no statistical claim is made.</li>
+<li><b>The evaluator refused unproven changes.</b> v2 (venue_match) and v3 (source_agreement) each passed 11 development checks against 11, so R2 failed and v1 stayed pinned. The agent had flagged both as uncertain in its own risk statements. v4 was refused too (below).</li>
+<li><b>The operator added the check the lessons asked for, and the harness chose to use it.</b> No editable check tested per-row evidence, so after two cycles the operator added <code>row_evidence</code> to the catalog, off by default, with one S7 repair round. In exp3 the improvement agent, not the operator, proposed enabling it (v4). The acceptance rules rejected v4 on R1 (P1 lost E2 and E3) and R2 (11 against 11). row_evidence passed in all six candidate runs, so the repair round never fired: the check accepts a row with at least one race-specific citation, and the evaluator requires every citation to be race-specific. The check is looser than the measurement it was meant to protect.</li>
 </ul>
 </section>
 
@@ -336,7 +364,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <ul>
 <li>Six fixed cases (two development, two held-out, two control), one run per case per arm. No statistical claim; the models are not deterministic and a repeat could differ.</li>
 <li>No sigma level or capability index. The control plan uses specification thresholds, not statistical control limits, which need about 20 runs.</li>
-<li>No accepted version yet in exp1 or exp2; the control phase has not been reached.</li>
+<li>No candidate has been accepted in exp1, exp2, or exp3; the control phase has not been reached, and v1 is still pinned.</li>
 <li>A hackathon prototype, not a production system.</li>
 </ul>
 </section>
@@ -347,6 +375,8 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <li><a href="https://github.com/TallGibbs/race-engineer-adaptive-harness">Repository</a></li>
 <li><a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp1.md">exp1 report</a> and <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/maps.md">maps</a></li>
 <li><a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp2.md">exp2 report</a> and <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/maps_exp2.md">maps</a></li>
+<li><a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp3.md">exp3 report</a> and <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/maps_exp3.md">maps</a></li>
+<li><a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/explain_control_checks.md">control_checks explain</a></li>
 <li><a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/SPECIFICATION.md">Specification</a> and <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/CONTRACT.md">contract</a></li>
 <li><a href="architecture.drawio">architecture.drawio</a> (open in draw.io)</li>
 </ul>
@@ -388,8 +418,15 @@ Control checks 10, 8, 9, 10 across v1 arms .. reports/exp1.md (baseline 10, memo
 First baseline run 11:49 EDT ................ reports/exp1.md run id D1-20260926T154911 (UTC 15:49)
 Commit hashes and times 14d7030 10:40, ecf78b2 10:42, 703e771 10:52, 1344432 11:35, 1ba48c8, 032720a, f39d1fe, dccd9f1 13:30
   ........................................... git log main
-2238abf, f389c56 (lane/mongo, not on main) .. git log lane/mongo
-exp3 rule verdicts and decision ............. not yet available (reports/exp3.md absent): placeholders
+exp3: R1 P1 lost E2, E3; R2 11 vs 11; R3 10 vs 10; R4 1181.9 vs 993.0 s; rejected; v1 pinned ... reports/exp3.md Acceptance rules and header
+exp3 checks passed per set 11/11/11, 10/10/10, 10/10/8 (baseline/memory_only/candidate) ... reports/exp3.md "Checks passed per case set"
+exp3 repeat: no check changed; 2 HARNESS baseline runs (P1, P2) rerun once ... reports/exp3.md Measure
+exp3 history v2 and v3 rejected on R2 ....... reports/exp3.md "Proposal history shown to the improvement agent"
+row_evidence passed in all 6 candidate runs; 1 S6 message per run (no repair) ... read-only find on events of the 6 exp3 candidate runs (type check, stage S6 message), 2026-09-26 after 14:09 EDT
+"at least one" vs "every" citation .......... adaptive_harness/runner/checks.py row_evidence; adaptive_harness/evaluate/checks.py _cites_race
+Control checks 10, 10 (exp3 v1 arms) ........ reports/exp3.md (baseline 10, memory_only 10)
+explain table: 1,952 / 2,157 documents, COLLSCAN vs IXSCAN, 1,952 vs 0 examined, 2 ms vs 1 ms, MongoDB 8.0.32 ... reports/explain_control_checks.md
+exp3 report commit 28677fc 14:08; merges 52ffa15 14:08, 77ff2e7 14:09 ... git log main
 -->
 </body>
 </html>
