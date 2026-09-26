@@ -1,0 +1,366 @@
+{
+  "$defs": {
+    "CauseDef": {
+      "additionalProperties": false,
+      "properties": {
+        "controllable": {
+          "title": "Controllable",
+          "type": "boolean"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "id": {
+          "enum": [
+            "method",
+            "material",
+            "measurement",
+            "machine",
+            "people",
+            "environment"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "surface": {
+          "anyOf": [
+            {
+              "enum": [
+                "/stages",
+                "/context_policy",
+                "/checks"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Surface"
+        }
+      },
+      "required": [
+        "id",
+        "controllable",
+        "surface",
+        "description"
+      ],
+      "title": "CauseDef",
+      "type": "object"
+    },
+    "ControlRule": {
+      "additionalProperties": false,
+      "properties": {
+        "new_cycle_evidence": {
+          "items": {
+            "enum": [
+              "development",
+              "held_out",
+              "control"
+            ],
+            "type": "string"
+          },
+          "title": "New Cycle Evidence",
+          "type": "array"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        },
+        "on_repeated_signal": {
+          "const": "pin_parent_and_open_cycle",
+          "default": "pin_parent_and_open_cycle",
+          "title": "On Repeated Signal",
+          "type": "string"
+        },
+        "out_of_plan": {
+          "items": {
+            "enum": [
+              "model_assignment",
+              "fastf1_version"
+            ],
+            "type": "string"
+          },
+          "title": "Out Of Plan",
+          "type": "array"
+        },
+        "out_of_plan_action": {
+          "const": "flag_not_compare",
+          "default": "flag_not_compare",
+          "title": "Out Of Plan Action",
+          "type": "string"
+        },
+        "pin_by": {
+          "const": "config_hash",
+          "default": "config_hash",
+          "title": "Pin By",
+          "type": "string"
+        },
+        "reruns_on_signal": {
+          "default": 1,
+          "title": "Reruns On Signal",
+          "type": "integer"
+        },
+        "signal": {
+          "const": "passed_below_threshold",
+          "default": "passed_below_threshold",
+          "title": "Signal",
+          "type": "string"
+        },
+        "threshold": {
+          "const": "checks_passed_in_pilot",
+          "default": "checks_passed_in_pilot",
+          "title": "Threshold",
+          "type": "string"
+        }
+      },
+      "required": [
+        "out_of_plan",
+        "note"
+      ],
+      "title": "ControlRule",
+      "type": "object"
+    },
+    "Ctq": {
+      "additionalProperties": false,
+      "properties": {
+        "applies_to": {
+          "items": {
+            "enum": [
+              "venue_brief",
+              "race_audit"
+            ],
+            "type": "string"
+          },
+          "title": "Applies To",
+          "type": "array"
+        },
+        "failure_category": {
+          "enum": [
+            "schema_invalid",
+            "venue_mismatch",
+            "coverage_mismatch",
+            "indicator_mismatch",
+            "arithmetic_mismatch",
+            "disposition_wrong",
+            "evidence_missing",
+            "budget_exceeded"
+          ],
+          "title": "Failure Category",
+          "type": "string"
+        },
+        "id": {
+          "enum": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "statement",
+        "failure_category",
+        "applies_to"
+      ],
+      "title": "Ctq",
+      "type": "object"
+    },
+    "PhaseDef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "define",
+            "measure",
+            "analyze",
+            "improve",
+            "control"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "stop_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop Reason"
+        },
+        "tollgate": {
+          "title": "Tollgate",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "tollgate"
+      ],
+      "title": "PhaseDef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "cause_categories": {
+      "items": {
+        "$ref": "#/$defs/CauseDef"
+      },
+      "title": "Cause Categories",
+      "type": "array"
+    },
+    "control": {
+      "$ref": "#/$defs/ControlRule"
+    },
+    "ctqs": {
+      "items": {
+        "$ref": "#/$defs/Ctq"
+      },
+      "title": "Ctqs",
+      "type": "array"
+    },
+    "evidence_rule": {
+      "additionalProperties": {
+        "items": {
+          "enum": [
+            "development",
+            "held_out",
+            "control"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "propertyNames": {
+        "enum": [
+          "define",
+          "analyze",
+          "improvement_prompt"
+        ]
+      },
+      "title": "Evidence Rule",
+      "type": "object"
+    },
+    "harness_reruns": {
+      "default": 1,
+      "title": "Harness Reruns",
+      "type": "integer"
+    },
+    "harness_result": {
+      "title": "Harness Result",
+      "type": "string"
+    },
+    "improvement_role": {
+      "const": "improvement_agent",
+      "default": "improvement_agent",
+      "title": "Improvement Role",
+      "type": "string"
+    },
+    "lesson_scope": {
+      "title": "Lesson Scope",
+      "type": "string"
+    },
+    "lesson_snapshot_after_analyze": {
+      "enum": [
+        "M0",
+        "M1"
+      ],
+      "title": "Lesson Snapshot After Analyze",
+      "type": "string"
+    },
+    "measure_optional_repeat": {
+      "title": "Measure Optional Repeat",
+      "type": "boolean"
+    },
+    "not_reported": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Not Reported",
+      "type": "array"
+    },
+    "phases": {
+      "items": {
+        "$ref": "#/$defs/PhaseDef"
+      },
+      "title": "Phases",
+      "type": "array"
+    },
+    "reported": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reported",
+      "type": "array"
+    },
+    "specification": {
+      "const": "SPECIFICATION.md",
+      "default": "SPECIFICATION.md",
+      "title": "Specification",
+      "type": "string"
+    },
+    "unit": {
+      "const": "case_run",
+      "default": "case_run",
+      "title": "Unit",
+      "type": "string"
+    },
+    "verify_and_control_sets": {
+      "items": {
+        "enum": [
+          "development",
+          "held_out",
+          "control"
+        ],
+        "type": "string"
+      },
+      "title": "Verify And Control Sets",
+      "type": "array"
+    },
+    "why_chain_max": {
+      "maximum": 5,
+      "minimum": 1,
+      "title": "Why Chain Max",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "ctqs",
+    "harness_result",
+    "reported",
+    "not_reported",
+    "cause_categories",
+    "evidence_rule",
+    "verify_and_control_sets",
+    "lesson_scope",
+    "lesson_snapshot_after_analyze",
+    "why_chain_max",
+    "measure_optional_repeat",
+    "phases",
+    "control"
+  ],
+  "title": "CycleConfig",
+  "type": "object"
+}

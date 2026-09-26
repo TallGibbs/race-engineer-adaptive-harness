@@ -1,0 +1,165 @@
+{
+  "$defs": {
+    "DefectRef": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "check_id": {
+          "enum": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8"
+          ],
+          "title": "Check Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "case_id",
+        "check_id"
+      ],
+      "title": "DefectRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A root cause from the analyze phase, kept as a lesson learned.",
+  "properties": {
+    "_id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "cause_category": {
+      "enum": [
+        "method",
+        "material",
+        "measurement",
+        "machine",
+        "people",
+        "environment"
+      ],
+      "title": "Cause Category",
+      "type": "string"
+    },
+    "controllable": {
+      "title": "Controllable",
+      "type": "boolean"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "defect": {
+      "$ref": "#/$defs/DefectRef"
+    },
+    "embedding": {
+      "items": {
+        "type": "number"
+      },
+      "title": "Embedding",
+      "type": "array"
+    },
+    "embedding_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Embedding Model"
+    },
+    "failure_category": {
+      "enum": [
+        "schema_invalid",
+        "venue_mismatch",
+        "coverage_mismatch",
+        "indicator_mismatch",
+        "arithmetic_mismatch",
+        "disposition_wrong",
+        "evidence_missing",
+        "budget_exceeded"
+      ],
+      "title": "Failure Category",
+      "type": "string"
+    },
+    "origin_event_id": {
+      "title": "Origin Event Id",
+      "type": "string"
+    },
+    "scope": {
+      "title": "Scope",
+      "type": "string"
+    },
+    "snapshot": {
+      "enum": [
+        "M0",
+        "M1"
+      ],
+      "title": "Snapshot",
+      "type": "string"
+    },
+    "source_event_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Event Ids",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "provisional",
+        "verified",
+        "rejected"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "why_chain": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Why Chain",
+      "type": "array"
+    }
+  },
+  "required": [
+    "_id",
+    "defect",
+    "failure_category",
+    "cause_category",
+    "controllable",
+    "why_chain",
+    "origin_event_id",
+    "source_event_ids",
+    "text",
+    "status",
+    "scope",
+    "snapshot",
+    "created_at"
+  ],
+  "title": "Lesson",
+  "type": "object"
+}

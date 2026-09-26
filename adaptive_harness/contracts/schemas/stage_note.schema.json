@@ -1,0 +1,27 @@
+{
+  "additionalProperties": false,
+  "description": "Output of every stage before S6 (S1 to S5 and X1 to X3), inside a Finish.\n\n`data` is free-form structured content the stage hands to later stages; its shape is\nset by the runner's charters, not by the contract.",
+  "properties": {
+    "data": {
+      "additionalProperties": true,
+      "title": "Data",
+      "type": "object"
+    },
+    "objections": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Objections",
+      "type": "array"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "summary"
+  ],
+  "title": "StageNote",
+  "type": "object"
+}

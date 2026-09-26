@@ -1,0 +1,141 @@
+{
+  "$defs": {
+    "CheckVerdict": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "anyOf": [
+            {
+              "enum": [
+                "schema_invalid",
+                "venue_mismatch",
+                "coverage_mismatch",
+                "indicator_mismatch",
+                "arithmetic_mismatch",
+                "disposition_wrong",
+                "evidence_missing",
+                "budget_exceeded"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "id": {
+          "enum": [
+            "E1",
+            "E2",
+            "E3",
+            "E4",
+            "E5",
+            "E6",
+            "E7",
+            "E8"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "result": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "HARNESS",
+            "NA"
+          ],
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "result"
+      ],
+      "title": "CheckVerdict",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "_id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "arm": {
+      "enum": [
+        "baseline",
+        "repeat",
+        "memory_only",
+        "candidate",
+        "confirmation"
+      ],
+      "title": "Arm",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/CheckVerdict"
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "defects": {
+      "title": "Defects",
+      "type": "integer"
+    },
+    "evaluator_sha256": {
+      "title": "Evaluator Sha256",
+      "type": "string"
+    },
+    "experiment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Experiment Id"
+    },
+    "key_sha256": {
+      "title": "Key Sha256",
+      "type": "string"
+    },
+    "opportunities": {
+      "title": "Opportunities",
+      "type": "integer"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "_id",
+    "run_id",
+    "case_id",
+    "arm",
+    "checks",
+    "opportunities",
+    "defects",
+    "evaluator_sha256",
+    "key_sha256",
+    "created_at"
+  ],
+  "title": "Evaluation",
+  "type": "object"
+}

@@ -1,0 +1,43 @@
+{
+  "additionalProperties": false,
+  "description": "What actually runs: every role mapped to a concrete model name.",
+  "properties": {
+    "assignment": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "enum": [
+          "race_engineer",
+          "statistician",
+          "data_engineer",
+          "improvement_agent"
+        ]
+      },
+      "title": "Assignment",
+      "type": "object"
+    },
+    "base_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Url"
+    },
+    "provider": {
+      "title": "Provider",
+      "type": "string"
+    }
+  },
+  "required": [
+    "provider",
+    "assignment"
+  ],
+  "title": "ResolvedModel",
+  "type": "object"
+}

@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "CallTool": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "call_tool",
+          "title": "Action",
+          "type": "string"
+        },
+        "args": {
+          "additionalProperties": true,
+          "title": "Args",
+          "type": "object"
+        },
+        "tool": {
+          "title": "Tool",
+          "type": "string"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "tool",
+        "why"
+      ],
+      "title": "CallTool",
+      "type": "object"
+    },
+    "Finish": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "finish",
+          "title": "Action",
+          "type": "string"
+        },
+        "output": {
+          "additionalProperties": true,
+          "title": "Output",
+          "type": "object"
+        }
+      },
+      "required": [
+        "action",
+        "output"
+      ],
+      "title": "Finish",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "call_tool": "#/$defs/CallTool",
+      "finish": "#/$defs/Finish"
+    },
+    "propertyName": "action"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/CallTool"
+    },
+    {
+      "$ref": "#/$defs/Finish"
+    }
+  ]
+}

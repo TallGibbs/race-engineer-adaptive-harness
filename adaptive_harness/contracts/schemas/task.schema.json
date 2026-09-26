@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "TargetRef": {
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "title": "Round",
+          "type": "integer"
+        },
+        "year": {
+          "title": "Year",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "round"
+      ],
+      "title": "TargetRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One case as the harness sees it. Never carries anything from the answer key.",
+  "properties": {
+    "as_of": {
+      "format": "date",
+      "title": "As Of",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "question": {
+      "title": "Question",
+      "type": "string"
+    },
+    "set": {
+      "enum": [
+        "development",
+        "held_out",
+        "control"
+      ],
+      "title": "Set",
+      "type": "string"
+    },
+    "target": {
+      "$ref": "#/$defs/TargetRef"
+    },
+    "type": {
+      "enum": [
+        "venue_brief",
+        "race_audit"
+      ],
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "set",
+    "type",
+    "target",
+    "as_of",
+    "question"
+  ],
+  "title": "Task",
+  "type": "object"
+}

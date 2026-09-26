@@ -1,0 +1,23 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "payload": {
+      "title": "Payload"
+    },
+    "sha256": {
+      "title": "Sha256",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "text",
+    "payload",
+    "sha256"
+  ],
+  "title": "ToolResult",
+  "type": "object"
+}

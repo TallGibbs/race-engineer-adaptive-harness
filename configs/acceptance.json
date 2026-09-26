@@ -1,0 +1,45 @@
+{
+  "specification": "SPECIFICATION.md",
+  "compare": {
+    "current": {"arm": "memory_only", "version": "current", "snapshot": "M1"},
+    "candidate": {"arm": "candidate", "version": "candidate", "snapshot": "M1"}
+  },
+  "same_cases": true,
+  "same_memory_snapshot": true,
+  "decision": "accept_only_if_all_hold",
+  "on_reject": "Keep the current configuration and record the reasons.",
+  "rules": [
+    {
+      "id": "R0",
+      "name": "validity",
+      "statement": "No run ends HARNESS after one rerun, judged from run metadata.",
+      "max_reruns": 1
+    },
+    {
+      "id": "R1",
+      "name": "no regression",
+      "statement": "Every check that passes on a control case under the current configuration also passes under the candidate.",
+      "case_set": "control"
+    },
+    {
+      "id": "R2",
+      "name": "improvement",
+      "statement": "The candidate passes strictly more development-case checks; with repeated runs, its worst run must beat the current configuration's best.",
+      "case_set": "development",
+      "strictly_more": true,
+      "repeats": "worst_candidate_beats_best_current"
+    },
+    {
+      "id": "R3",
+      "name": "held-out",
+      "statement": "The candidate passes at least as many held-out checks.",
+      "case_set": "held_out"
+    },
+    {
+      "id": "R4",
+      "name": "time",
+      "statement": "The candidate's total wall-clock time is at most 1.5 times the current configuration's.",
+      "max_time_ratio": 1.5
+    }
+  ]
+}

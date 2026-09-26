@@ -1,0 +1,67 @@
+{
+  "version_id": "v1",
+  "parent_id": null,
+  "task_family": "neutralization_brief",
+  "model": {
+    "provider": "env:MODEL_PROVIDER",
+    "base_url": "env:MODEL_BASE_URL",
+    "default": "env:MODEL_NAME",
+    "roles": {
+      "race_engineer": "env:MODEL_NAME_RACE_ENGINEER",
+      "statistician": "env:MODEL_NAME_STATISTICIAN",
+      "data_engineer": "env:MODEL_NAME_DATA_ENGINEER",
+      "improvement_agent": "env:MODEL_NAME_IMPROVEMENT"
+    }
+  },
+  "budgets": {
+    "max_model_calls": 20,
+    "max_tool_calls": 40,
+    "max_wall_seconds": 600
+  },
+  "stages": ["S1", "S2a", "S2b", "S3", "S4", "S5", "S6", "S7"],
+  "stage_catalog": {
+    "S1": {"name": "frame", "kind": "model", "roles": ["race_engineer"], "tools": [], "parallel_group": null},
+    "S2a": {"name": "assess", "kind": "model", "roles": ["statistician"], "tools": [], "parallel_group": "S2"},
+    "S2b": {"name": "assess", "kind": "model", "roles": ["data_engineer"], "tools": [], "parallel_group": "S2"},
+    "S3": {"name": "challenge", "kind": "model", "roles": ["race_engineer", "statistician", "data_engineer"], "tools": [], "parallel_group": null},
+    "S4": {"name": "gather", "kind": "model", "roles": ["data_engineer"], "tools": ["list_events", "race_control_messages", "track_status"], "parallel_group": null},
+    "S5": {"name": "estimate", "kind": "model", "roles": ["statistician"], "tools": ["interval"], "parallel_group": null},
+    "S6": {"name": "brief", "kind": "model", "roles": ["race_engineer"], "tools": [], "parallel_group": null},
+    "S7": {"name": "validate", "kind": "code", "roles": [], "tools": [], "parallel_group": null}
+  },
+  "optional_stage_catalog": {
+    "X1": {"name": "identity_check", "kind": "model", "roles": ["data_engineer"], "tools": ["list_events"], "parallel_group": null, "before": "S1", "after": null},
+    "X2": {"name": "definitions", "kind": "model", "roles": ["statistician"], "tools": [], "parallel_group": null, "before": "S4", "after": null},
+    "X3": {"name": "reconcile_sources", "kind": "model", "roles": ["data_engineer"], "tools": ["race_control_messages", "track_status"], "parallel_group": null, "before": null, "after": "S4"}
+  },
+  "context_policy": {
+    "lessons": {
+      "k": 3,
+      "filters": {"status": "verified", "scope": "neutralization_brief"}
+    },
+    "roles": {
+      "race_engineer": {
+        "S1": ["task", "output_schema", "lessons"],
+        "S3": ["task", "output_schema", "prior:S1", "prior:S2a", "prior:S2b"],
+        "S6": ["task", "output_schema", "prior:S1", "prior:S3", "prior:S4", "prior:S5", "open_objections"]
+      },
+      "statistician": {
+        "S2a": ["task", "output_schema", "prior:S1", "lessons"],
+        "S3": ["task", "output_schema", "prior:S1", "prior:S2a", "prior:S2b"],
+        "S5": ["task", "output_schema", "tool_docs", "prior:S4"]
+      },
+      "data_engineer": {
+        "S2b": ["task", "output_schema", "prior:S1", "lessons"],
+        "S3": ["task", "output_schema", "prior:S1", "prior:S2a", "prior:S2b"],
+        "S4": ["task", "output_schema", "tool_docs", "prior:S1", "prior:S3"]
+      }
+    }
+  },
+  "checks": {
+    "schema": {"enabled": true, "editable": false},
+    "venue_match": {"enabled": false},
+    "source_agreement": {"enabled": false, "tolerance_laps": 1},
+    "min_races_for_rate": {"enabled": false, "value": 1}
+  },
+  "change_cap": 3
+}

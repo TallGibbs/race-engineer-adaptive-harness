@@ -1,0 +1,271 @@
+{
+  "$defs": {
+    "Acceptance": {
+      "additionalProperties": false,
+      "properties": {
+        "R0": {
+          "$ref": "#/$defs/RuleOutcome"
+        },
+        "R1": {
+          "$ref": "#/$defs/RuleOutcome"
+        },
+        "R2": {
+          "$ref": "#/$defs/RuleOutcome"
+        },
+        "R3": {
+          "$ref": "#/$defs/RuleOutcome"
+        },
+        "R4": {
+          "$ref": "#/$defs/RuleOutcome"
+        }
+      },
+      "required": [
+        "R0",
+        "R1",
+        "R2",
+        "R3",
+        "R4"
+      ],
+      "title": "Acceptance",
+      "type": "object"
+    },
+    "Dmaic": {
+      "additionalProperties": false,
+      "properties": {
+        "analyze": {
+          "$ref": "#/$defs/Phase"
+        },
+        "control": {
+          "$ref": "#/$defs/Phase"
+        },
+        "define": {
+          "$ref": "#/$defs/Phase"
+        },
+        "improve": {
+          "$ref": "#/$defs/Phase"
+        },
+        "measure": {
+          "$ref": "#/$defs/Phase"
+        }
+      },
+      "title": "Dmaic",
+      "type": "object"
+    },
+    "ExperimentCase": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "set": {
+          "enum": [
+            "development",
+            "held_out",
+            "control"
+          ],
+          "title": "Set",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "set"
+      ],
+      "title": "ExperimentCase",
+      "type": "object"
+    },
+    "Phase": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed At"
+        },
+        "status": {
+          "default": "not_reached",
+          "enum": [
+            "passed",
+            "stopped",
+            "not_reached"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tollgate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Tollgate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Phase",
+      "type": "object"
+    },
+    "RuleOutcome": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "holds": {
+          "title": "Holds",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "holds",
+        "detail"
+      ],
+      "title": "RuleOutcome",
+      "type": "object"
+    },
+    "Tollgate": {
+      "additionalProperties": false,
+      "properties": {
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "passed"
+      ],
+      "title": "Tollgate",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One document per improvement cycle.",
+  "properties": {
+    "_id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "acceptance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Acceptance"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "arms": {
+      "items": {
+        "enum": [
+          "baseline",
+          "repeat",
+          "memory_only",
+          "candidate",
+          "confirmation"
+        ],
+        "type": "string"
+      },
+      "title": "Arms",
+      "type": "array"
+    },
+    "candidate_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Candidate Version"
+    },
+    "cases": {
+      "items": {
+        "$ref": "#/$defs/ExperimentCase"
+      },
+      "title": "Cases",
+      "type": "array"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "decision": {
+      "anyOf": [
+        {
+          "enum": [
+            "no_project",
+            "stopped",
+            "accepted",
+            "rejected"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Decision"
+    },
+    "dmaic": {
+      "$ref": "#/$defs/Dmaic"
+    },
+    "report_path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Report Path"
+    }
+  },
+  "required": [
+    "_id",
+    "cases",
+    "arms",
+    "created_at"
+  ],
+  "title": "Experiment",
+  "type": "object"
+}

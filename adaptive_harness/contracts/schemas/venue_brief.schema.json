@@ -1,0 +1,299 @@
+{
+  "$defs": {
+    "Counts": {
+      "additionalProperties": false,
+      "properties": {
+        "n_any": {
+          "description": "The number of those races with sc or vsc true.",
+          "minimum": 0,
+          "title": "N Any",
+          "type": "integer"
+        },
+        "n_races": {
+          "description": "The number of races counted for the venue.",
+          "minimum": 0,
+          "title": "N Races",
+          "type": "integer"
+        },
+        "n_sc": {
+          "description": "The number of those races with sc true.",
+          "minimum": 0,
+          "title": "N Sc",
+          "type": "integer"
+        },
+        "n_vsc": {
+          "description": "The number of those races with vsc true.",
+          "minimum": 0,
+          "title": "N Vsc",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "n_races",
+        "n_sc",
+        "n_vsc",
+        "n_any"
+      ],
+      "title": "Counts",
+      "type": "object"
+    },
+    "RaceRow": {
+      "additionalProperties": false,
+      "properties": {
+        "event_name": {
+          "title": "Event Name",
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Ids of recorded tool_result events of this run that concern this race.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "location": {
+          "description": "The Location field of the season schedule for this event.",
+          "title": "Location",
+          "type": "string"
+        },
+        "red_flag": {
+          "description": "True when the race was suspended with a red flag.",
+          "title": "Red Flag",
+          "type": "boolean"
+        },
+        "round": {
+          "title": "Round",
+          "type": "integer"
+        },
+        "sc": {
+          "description": "True when the safety car ran during the race, including a start behind the safety car. A formation lap before a standing start does not count.",
+          "title": "Sc",
+          "type": "boolean"
+        },
+        "vsc": {
+          "description": "True when a virtual safety car was deployed during the race.",
+          "title": "Vsc",
+          "type": "boolean"
+        },
+        "year": {
+          "title": "Year",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "round",
+        "location",
+        "event_name",
+        "sc",
+        "vsc",
+        "red_flag",
+        "evidence"
+      ],
+      "title": "RaceRow",
+      "type": "object"
+    },
+    "Rate": {
+      "additionalProperties": false,
+      "properties": {
+        "interval": {
+          "description": "Wilson score interval [low, high] at 90 percent confidence (z = 1.6448536269514722), bounds rounded to 3 decimals.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Interval",
+          "type": "array"
+        },
+        "method": {
+          "const": "wilson_90",
+          "default": "wilson_90",
+          "title": "Method",
+          "type": "string"
+        },
+        "value": {
+          "description": "k / n_races, rounded to 3 decimals.",
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "value",
+        "interval"
+      ],
+      "title": "Rate",
+      "type": "object"
+    },
+    "Rates": {
+      "additionalProperties": false,
+      "properties": {
+        "any": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Rate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rate of n_any over n_races; null when n_races is 0."
+        },
+        "sc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Rate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rate of n_sc over n_races; null when n_races is 0."
+        },
+        "vsc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Rate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Rate of n_vsc over n_races; null when n_races is 0."
+        }
+      },
+      "required": [
+        "sc",
+        "vsc",
+        "any"
+      ],
+      "title": "Rates",
+      "type": "object"
+    },
+    "TargetRef": {
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "title": "Round",
+          "type": "integer"
+        },
+        "year": {
+          "title": "Year",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "round"
+      ],
+      "title": "TargetRef",
+      "type": "object"
+    },
+    "Venue": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "description": "Ids of recorded tool_result events of this run that establish the venue.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "from_target": {
+          "$ref": "#/$defs/TargetRef",
+          "description": "The target event whose Location defines the venue."
+        },
+        "location": {
+          "description": "The Location field of the season schedule for the target event.",
+          "title": "Location",
+          "type": "string"
+        }
+      },
+      "required": [
+        "location",
+        "from_target",
+        "evidence"
+      ],
+      "title": "Venue",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Answer to a venue_brief case.",
+  "properties": {
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "counts": {
+      "$ref": "#/$defs/Counts"
+    },
+    "disposition": {
+      "description": "HOLD, with no rates, when n_races is 0. Otherwise GO.",
+      "enum": [
+        "GO",
+        "HOLD"
+      ],
+      "title": "Disposition",
+      "type": "string"
+    },
+    "hold_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Why the disposition is HOLD; null for GO.",
+      "title": "Hold Reason"
+    },
+    "open_objections": {
+      "description": "Objections raised and not resolved.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Open Objections",
+      "type": "array"
+    },
+    "races": {
+      "description": "Every race at the venue: A Grand Prix race session (not a sprint) that started, including races that were red-flagged, held from 2018 on and before the as-of date. A race counts when its schedule Location equals the target event's Location.",
+      "items": {
+        "$ref": "#/$defs/RaceRow"
+      },
+      "title": "Races",
+      "type": "array"
+    },
+    "rates": {
+      "$ref": "#/$defs/Rates"
+    },
+    "thin_sample": {
+      "description": "True when n_races is below 5.",
+      "title": "Thin Sample",
+      "type": "boolean"
+    },
+    "venue": {
+      "$ref": "#/$defs/Venue"
+    }
+  },
+  "required": [
+    "case_id",
+    "venue",
+    "races",
+    "counts",
+    "rates",
+    "disposition",
+    "thin_sample"
+  ],
+  "title": "VenueBrief",
+  "type": "object"
+}

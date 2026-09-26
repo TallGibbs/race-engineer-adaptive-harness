@@ -1,0 +1,202 @@
+{
+  "$defs": {
+    "ContextManifestItem": {
+      "additionalProperties": false,
+      "properties": {
+        "approx_tokens": {
+          "title": "Approx Tokens",
+          "type": "integer"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "item": {
+          "title": "Item",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "item",
+        "sha256",
+        "approx_tokens"
+      ],
+      "title": "ContextManifestItem",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_read_tokens": {
+          "default": 0,
+          "title": "Cache Read Tokens",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "_id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "content": {
+      "default": null,
+      "title": "Content"
+    },
+    "content_sha256": {
+      "title": "Content Sha256",
+      "type": "string"
+    },
+    "context_manifest": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/ContextManifestItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Context Manifest"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Refs",
+      "type": "array"
+    },
+    "role": {
+      "anyOf": [
+        {
+          "enum": [
+            "race_engineer",
+            "statistician",
+            "data_engineer",
+            "improvement_agent"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Role"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "seq": {
+      "maximum": 99999,
+      "minimum": 0,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "stage_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stage Id"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "type": {
+      "enum": [
+        "model_call",
+        "tool_call",
+        "tool_result",
+        "message",
+        "decision",
+        "check",
+        "error"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "usage": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Usage"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "_id",
+    "run_id",
+    "seq",
+    "type",
+    "content_sha256",
+    "created_at"
+  ],
+  "title": "Event",
+  "type": "object"
+}

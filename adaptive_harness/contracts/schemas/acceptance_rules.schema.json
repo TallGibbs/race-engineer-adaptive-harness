@@ -1,0 +1,198 @@
+{
+  "$defs": {
+    "AcceptanceRule": {
+      "additionalProperties": false,
+      "properties": {
+        "case_set": {
+          "anyOf": [
+            {
+              "enum": [
+                "development",
+                "held_out",
+                "control"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Case Set"
+        },
+        "id": {
+          "enum": [
+            "R0",
+            "R1",
+            "R2",
+            "R3",
+            "R4"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "max_reruns": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Reruns"
+        },
+        "max_time_ratio": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Time Ratio"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "repeats": {
+          "anyOf": [
+            {
+              "const": "worst_candidate_beats_best_current",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repeats"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "strictly_more": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strictly More"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "statement"
+      ],
+      "title": "AcceptanceRule",
+      "type": "object"
+    },
+    "ArmRef": {
+      "additionalProperties": false,
+      "properties": {
+        "arm": {
+          "enum": [
+            "baseline",
+            "repeat",
+            "memory_only",
+            "candidate",
+            "confirmation"
+          ],
+          "title": "Arm",
+          "type": "string"
+        },
+        "snapshot": {
+          "enum": [
+            "M0",
+            "M1"
+          ],
+          "title": "Snapshot",
+          "type": "string"
+        },
+        "version": {
+          "enum": [
+            "current",
+            "candidate"
+          ],
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arm",
+        "version",
+        "snapshot"
+      ],
+      "title": "ArmRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "compare": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ArmRef"
+      },
+      "propertyNames": {
+        "enum": [
+          "current",
+          "candidate"
+        ]
+      },
+      "title": "Compare",
+      "type": "object"
+    },
+    "decision": {
+      "const": "accept_only_if_all_hold",
+      "default": "accept_only_if_all_hold",
+      "title": "Decision",
+      "type": "string"
+    },
+    "on_reject": {
+      "title": "On Reject",
+      "type": "string"
+    },
+    "rules": {
+      "items": {
+        "$ref": "#/$defs/AcceptanceRule"
+      },
+      "title": "Rules",
+      "type": "array"
+    },
+    "same_cases": {
+      "const": true,
+      "default": true,
+      "title": "Same Cases",
+      "type": "boolean"
+    },
+    "same_memory_snapshot": {
+      "const": true,
+      "default": true,
+      "title": "Same Memory Snapshot",
+      "type": "boolean"
+    },
+    "specification": {
+      "const": "SPECIFICATION.md",
+      "default": "SPECIFICATION.md",
+      "title": "Specification",
+      "type": "string"
+    }
+  },
+  "required": [
+    "compare",
+    "on_reject",
+    "rules"
+  ],
+  "title": "AcceptanceRules",
+  "type": "object"
+}

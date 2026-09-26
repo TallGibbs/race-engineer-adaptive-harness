@@ -1,0 +1,55 @@
+{
+  "specification": "SPECIFICATION.md",
+  "improvement_role": "improvement_agent",
+  "ctqs": [
+    {"id": "E1", "name": "schema", "statement": "The output is valid against its schema.", "failure_category": "schema_invalid", "applies_to": ["venue_brief", "race_audit"]},
+    {"id": "E2", "name": "venue", "statement": "The resolved venue matches the key, and no race from another venue is counted.", "failure_category": "venue_mismatch", "applies_to": ["venue_brief"]},
+    {"id": "E3", "name": "coverage", "statement": "The set of races counted equals the key's set.", "failure_category": "coverage_mismatch", "applies_to": ["venue_brief"]},
+    {"id": "E4", "name": "indicators", "statement": "sc, vsc, and red_flag match the key for every race, or for the audited race.", "failure_category": "indicator_mismatch", "applies_to": ["venue_brief", "race_audit"]},
+    {"id": "E5", "name": "arithmetic", "statement": "Counts, rates, and intervals match an independent recomputation, within 0.001.", "failure_category": "arithmetic_mismatch", "applies_to": ["venue_brief"]},
+    {"id": "E6", "name": "disposition", "statement": "HOLD with no rates when no race qualifies, and thin_sample correct.", "failure_category": "disposition_wrong", "applies_to": ["venue_brief"]},
+    {"id": "E7", "name": "evidence", "statement": "Every race row cites recorded tool results from the same run about that race.", "failure_category": "evidence_missing", "applies_to": ["venue_brief", "race_audit"]},
+    {"id": "E8", "name": "budget", "statement": "The run stays within its budgets.", "failure_category": "budget_exceeded", "applies_to": ["venue_brief", "race_audit"]}
+  ],
+  "unit": "case_run",
+  "harness_result": "A data-fetch, model-API, or timeout failure is a HARNESS result: a failure of the measurement system, neither a defect nor an opportunity. The run is repeated once.",
+  "harness_reruns": 1,
+  "reported": ["defects", "opportunities", "dpo", "pareto_by_check"],
+  "not_reported": ["sigma_level", "capability_index"],
+  "cause_categories": [
+    {"id": "method", "controllable": true, "surface": "/stages", "description": "Stage order and optional stages."},
+    {"id": "material", "controllable": true, "surface": "/context_policy", "description": "The information each role receives."},
+    {"id": "measurement", "controllable": true, "surface": "/checks", "description": "In-harness checks."},
+    {"id": "machine", "controllable": false, "surface": null, "description": "Model and tools. Fixed."},
+    {"id": "people", "controllable": false, "surface": null, "description": "Role charters. Fixed."},
+    {"id": "environment", "controllable": false, "surface": null, "description": "Data availability and network. Fixed."}
+  ],
+  "evidence_rule": {
+    "define": ["development"],
+    "analyze": ["development"],
+    "improvement_prompt": ["development"]
+  },
+  "verify_and_control_sets": ["held_out", "control"],
+  "lesson_scope": "neutralization_brief",
+  "lesson_snapshot_after_analyze": "M1",
+  "why_chain_max": 5,
+  "measure_optional_repeat": true,
+  "phases": [
+    {"id": "define", "tollgate": "Pass when there is at least one development defect in the baseline arm.", "stop_reason": "no project: the process meets its specification on the development cases"},
+    {"id": "measure", "tollgate": "Pass when the measurement is valid: key and evaluator hashes confirmed, a fresh evaluator process re-scores every baseline run with identical verdicts, and no HARNESS result remains after one rerun.", "stop_reason": null},
+    {"id": "analyze", "tollgate": "Pass when at least one verified root cause is controllable.", "stop_reason": "no controllable root cause"},
+    {"id": "improve", "tollgate": "Pass when the proposal is valid and the acceptance rules R0 to R4 all hold, applied by the evaluator process.", "stop_reason": null},
+    {"id": "control", "tollgate": "Pass when the control plan is armed and every confirmation case meets its threshold; a rollback is a recorded control action.", "stop_reason": null}
+  ],
+  "control": {
+    "pin_by": "config_hash",
+    "threshold": "checks_passed_in_pilot",
+    "signal": "passed_below_threshold",
+    "reruns_on_signal": 1,
+    "on_repeated_signal": "pin_parent_and_open_cycle",
+    "new_cycle_evidence": ["development"],
+    "out_of_plan": ["model_assignment", "fastf1_version"],
+    "out_of_plan_action": "flag_not_compare",
+    "note": "These are specification thresholds, not statistical control limits, which need about 20 runs."
+  }
+}

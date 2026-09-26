@@ -1,0 +1,516 @@
+{
+  "$defs": {
+    "Budgets": {
+      "additionalProperties": false,
+      "properties": {
+        "max_model_calls": {
+          "minimum": 1,
+          "title": "Max Model Calls",
+          "type": "integer"
+        },
+        "max_tool_calls": {
+          "minimum": 0,
+          "title": "Max Tool Calls",
+          "type": "integer"
+        },
+        "max_wall_seconds": {
+          "minimum": 1,
+          "title": "Max Wall Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_model_calls",
+        "max_tool_calls",
+        "max_wall_seconds"
+      ],
+      "title": "Budgets",
+      "type": "object"
+    },
+    "Checks": {
+      "additionalProperties": false,
+      "properties": {
+        "min_races_for_rate": {
+          "$ref": "#/$defs/MinRacesCheck"
+        },
+        "schema": {
+          "$ref": "#/$defs/SchemaCheck"
+        },
+        "source_agreement": {
+          "$ref": "#/$defs/SourceAgreementCheck"
+        },
+        "venue_match": {
+          "$ref": "#/$defs/ToggleCheck"
+        }
+      },
+      "required": [
+        "schema",
+        "venue_match",
+        "source_agreement",
+        "min_races_for_rate"
+      ],
+      "title": "Checks",
+      "type": "object"
+    },
+    "ContextPolicy": {
+      "additionalProperties": false,
+      "description": "roles[role][stage_id] -> ordered list of context items.\n\nA stage with no entry for a role gets the runner default: task, output_schema,\nand tool_docs when the stage has tools.",
+      "properties": {
+        "lessons": {
+          "$ref": "#/$defs/LessonSettings"
+        },
+        "roles": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          },
+          "propertyNames": {
+            "enum": [
+              "race_engineer",
+              "statistician",
+              "data_engineer"
+            ]
+          },
+          "title": "Roles",
+          "type": "object"
+        }
+      },
+      "required": [
+        "lessons",
+        "roles"
+      ],
+      "title": "ContextPolicy",
+      "type": "object"
+    },
+    "LessonFilters": {
+      "additionalProperties": false,
+      "properties": {
+        "scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Status"
+        }
+      },
+      "title": "LessonFilters",
+      "type": "object"
+    },
+    "LessonSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "filters": {
+          "$ref": "#/$defs/LessonFilters"
+        },
+        "k": {
+          "maximum": 5,
+          "minimum": 0,
+          "title": "K",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "k",
+        "filters"
+      ],
+      "title": "LessonSettings",
+      "type": "object"
+    },
+    "MinRacesCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "value": {
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "enabled",
+        "value"
+      ],
+      "title": "MinRacesCheck",
+      "type": "object"
+    },
+    "ModelBlock": {
+      "additionalProperties": false,
+      "description": "Values are literal names or \"env:<VAR>\" references resolved at run time.\n\nThe API key is never stored. No sampling parameters or token limits exist.",
+      "properties": {
+        "base_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Url"
+        },
+        "default": {
+          "title": "Default",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "roles": {
+          "$ref": "#/$defs/RoleModels"
+        }
+      },
+      "required": [
+        "provider",
+        "default",
+        "roles"
+      ],
+      "title": "ModelBlock",
+      "type": "object"
+    },
+    "OptionalStageDef": {
+      "additionalProperties": false,
+      "properties": {
+        "after": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After"
+        },
+        "before": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before"
+        },
+        "kind": {
+          "default": "model",
+          "enum": [
+            "model",
+            "code"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "parallel_group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parallel Group"
+        },
+        "roles": {
+          "items": {
+            "enum": [
+              "race_engineer",
+              "statistician",
+              "data_engineer"
+            ],
+            "type": "string"
+          },
+          "title": "Roles",
+          "type": "array"
+        },
+        "tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "OptionalStageDef",
+      "type": "object"
+    },
+    "RoleModels": {
+      "additionalProperties": false,
+      "properties": {
+        "data_engineer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Engineer"
+        },
+        "improvement_agent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Improvement Agent"
+        },
+        "race_engineer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Race Engineer"
+        },
+        "statistician": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Statistician"
+        }
+      },
+      "title": "RoleModels",
+      "type": "object"
+    },
+    "SchemaCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "editable": {
+          "const": false,
+          "default": false,
+          "title": "Editable",
+          "type": "boolean"
+        },
+        "enabled": {
+          "const": true,
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "SchemaCheck",
+      "type": "object"
+    },
+    "SourceAgreementCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "tolerance_laps": {
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Tolerance Laps",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "enabled",
+        "tolerance_laps"
+      ],
+      "title": "SourceAgreementCheck",
+      "type": "object"
+    },
+    "StageDef": {
+      "additionalProperties": false,
+      "description": "One stage in the fixed catalog. kind \"code\" stages run no model (S7).",
+      "properties": {
+        "kind": {
+          "default": "model",
+          "enum": [
+            "model",
+            "code"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "parallel_group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parallel Group"
+        },
+        "roles": {
+          "items": {
+            "enum": [
+              "race_engineer",
+              "statistician",
+              "data_engineer"
+            ],
+            "type": "string"
+          },
+          "title": "Roles",
+          "type": "array"
+        },
+        "tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "StageDef",
+      "type": "object"
+    },
+    "ToggleCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled"
+      ],
+      "title": "ToggleCheck",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "budgets": {
+      "$ref": "#/$defs/Budgets"
+    },
+    "change_cap": {
+      "minimum": 0,
+      "title": "Change Cap",
+      "type": "integer"
+    },
+    "checks": {
+      "$ref": "#/$defs/Checks"
+    },
+    "context_policy": {
+      "$ref": "#/$defs/ContextPolicy"
+    },
+    "model": {
+      "$ref": "#/$defs/ModelBlock"
+    },
+    "optional_stage_catalog": {
+      "additionalProperties": {
+        "$ref": "#/$defs/OptionalStageDef"
+      },
+      "title": "Optional Stage Catalog",
+      "type": "object"
+    },
+    "parent_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parent Id"
+    },
+    "stage_catalog": {
+      "additionalProperties": {
+        "$ref": "#/$defs/StageDef"
+      },
+      "title": "Stage Catalog",
+      "type": "object"
+    },
+    "stages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Stages",
+      "type": "array"
+    },
+    "task_family": {
+      "default": "neutralization_brief",
+      "title": "Task Family",
+      "type": "string"
+    },
+    "version_id": {
+      "title": "Version Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "version_id",
+    "parent_id",
+    "model",
+    "budgets",
+    "stages",
+    "stage_catalog",
+    "optional_stage_catalog",
+    "context_policy",
+    "checks",
+    "change_cap"
+  ],
+  "title": "HarnessConfig",
+  "type": "object"
+}

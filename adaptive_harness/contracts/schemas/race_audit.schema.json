@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "AuditRace": {
+      "additionalProperties": false,
+      "properties": {
+        "event_name": {
+          "title": "Event Name",
+          "type": "string"
+        },
+        "location": {
+          "description": "The Location field of the season schedule for this event.",
+          "title": "Location",
+          "type": "string"
+        },
+        "round": {
+          "title": "Round",
+          "type": "integer"
+        },
+        "year": {
+          "title": "Year",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "year",
+        "round",
+        "event_name",
+        "location"
+      ],
+      "title": "AuditRace",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Answer to a race_audit case.",
+  "properties": {
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "evidence": {
+      "description": "Ids of recorded tool_result events of this run that concern this race.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "open_objections": {
+      "description": "Objections raised and not resolved.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Open Objections",
+      "type": "array"
+    },
+    "race": {
+      "$ref": "#/$defs/AuditRace",
+      "description": "The target race: A Grand Prix race session (not a sprint) that started, including races that were red-flagged, held from 2018 on and before the as-of date."
+    },
+    "red_flag": {
+      "description": "True when the race was suspended with a red flag.",
+      "title": "Red Flag",
+      "type": "boolean"
+    },
+    "sc": {
+      "description": "True when the safety car ran during the race, including a start behind the safety car. A formation lap before a standing start does not count.",
+      "title": "Sc",
+      "type": "boolean"
+    },
+    "vsc": {
+      "description": "True when a virtual safety car was deployed during the race.",
+      "title": "Vsc",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "case_id",
+    "race",
+    "sc",
+    "vsc",
+    "red_flag",
+    "evidence"
+  ],
+  "title": "RaceAudit",
+  "type": "object"
+}

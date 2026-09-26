@@ -1,0 +1,193 @@
+{
+  "$defs": {
+    "RunModel": {
+      "additionalProperties": false,
+      "properties": {
+        "assignment": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "enum": [
+              "race_engineer",
+              "statistician",
+              "data_engineer",
+              "improvement_agent"
+            ]
+          },
+          "title": "Assignment",
+          "type": "object"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "assignment"
+      ],
+      "title": "RunModel",
+      "type": "object"
+    },
+    "Totals": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_read_tokens": {
+          "default": 0,
+          "title": "Cache Read Tokens",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "model_calls": {
+          "default": 0,
+          "title": "Model Calls",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "tool_calls": {
+          "default": 0,
+          "title": "Tool Calls",
+          "type": "integer"
+        },
+        "wall_seconds": {
+          "default": 0.0,
+          "title": "Wall Seconds",
+          "type": "number"
+        }
+      },
+      "title": "Totals",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "_id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "arm": {
+      "enum": [
+        "baseline",
+        "repeat",
+        "memory_only",
+        "candidate",
+        "confirmation"
+      ],
+      "title": "Arm",
+      "type": "string"
+    },
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+    },
+    "ended_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ended At"
+    },
+    "experiment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Experiment Id"
+    },
+    "fastf1_version": {
+      "title": "Fastf1 Version",
+      "type": "string"
+    },
+    "harness_version": {
+      "title": "Harness Version",
+      "type": "string"
+    },
+    "memory_snapshot": {
+      "enum": [
+        "M0",
+        "M1"
+      ],
+      "title": "Memory Snapshot",
+      "type": "string"
+    },
+    "model": {
+      "$ref": "#/$defs/RunModel"
+    },
+    "output": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output"
+    },
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
+      "type": "string"
+    },
+    "status": {
+      "anyOf": [
+        {
+          "enum": [
+            "completed",
+            "hold",
+            "budget_exceeded",
+            "harness_error"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Status"
+    },
+    "totals": {
+      "$ref": "#/$defs/Totals"
+    }
+  },
+  "required": [
+    "_id",
+    "harness_version",
+    "config_hash",
+    "memory_snapshot",
+    "case_id",
+    "arm",
+    "model",
+    "fastf1_version",
+    "started_at"
+  ],
+  "title": "Run",
+  "type": "object"
+}

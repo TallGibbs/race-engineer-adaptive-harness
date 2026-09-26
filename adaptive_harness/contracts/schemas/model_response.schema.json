@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "ModelUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_read_tokens": {
+          "default": 0,
+          "title": "Cache Read Tokens",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "ModelUsage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "latency_ms": {
+      "default": 0,
+      "title": "Latency Ms",
+      "type": "integer"
+    },
+    "model": {
+      "title": "Model",
+      "type": "string"
+    },
+    "parsed": {
+      "default": null,
+      "title": "Parsed"
+    },
+    "stop_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stop Reason"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "usage": {
+      "$ref": "#/$defs/ModelUsage"
+    }
+  },
+  "required": [
+    "text",
+    "model"
+  ],
+  "title": "ModelResponse",
+  "type": "object"
+}

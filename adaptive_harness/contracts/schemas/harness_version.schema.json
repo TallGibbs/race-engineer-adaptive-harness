@@ -1,0 +1,355 @@
+{
+  "$defs": {
+    "Change": {
+      "additionalProperties": false,
+      "properties": {
+        "lesson_id": {
+          "title": "Lesson Id",
+          "type": "string"
+        },
+        "op": {
+          "$ref": "#/$defs/PatchOp"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "lesson_id",
+        "why"
+      ],
+      "title": "Change",
+      "type": "object"
+    },
+    "ControlPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation_run_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Confirmation Run Ids",
+          "type": "array"
+        },
+        "fastf1_version": {
+          "title": "Fastf1 Version",
+          "type": "string"
+        },
+        "model": {
+          "$ref": "#/$defs/ResolvedModel"
+        },
+        "reaction_plan": {
+          "title": "Reaction Plan",
+          "type": "string"
+        },
+        "signals": {
+          "items": {
+            "$ref": "#/$defs/Signal"
+          },
+          "title": "Signals",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "armed",
+            "in_control",
+            "signal",
+            "rolled_back"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "thresholds": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Thresholds",
+          "type": "object"
+        }
+      },
+      "required": [
+        "thresholds",
+        "model",
+        "fastf1_version",
+        "reaction_plan",
+        "status"
+      ],
+      "title": "ControlPlan",
+      "type": "object"
+    },
+    "PatchOp": {
+      "additionalProperties": false,
+      "description": "One RFC 6902 JSON Patch operation.",
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From"
+        },
+        "op": {
+          "enum": [
+            "add",
+            "remove",
+            "replace",
+            "move",
+            "copy",
+            "test"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "op",
+        "path"
+      ],
+      "title": "PatchOp",
+      "type": "object"
+    },
+    "ResolvedModel": {
+      "additionalProperties": false,
+      "description": "What actually runs: every role mapped to a concrete model name.",
+      "properties": {
+        "assignment": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "enum": [
+              "race_engineer",
+              "statistician",
+              "data_engineer",
+              "improvement_agent"
+            ]
+          },
+          "title": "Assignment",
+          "type": "object"
+        },
+        "base_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Url"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "assignment"
+      ],
+      "title": "ResolvedModel",
+      "type": "object"
+    },
+    "Signal": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "integer"
+        },
+        "repeated": {
+          "title": "Repeated",
+          "type": "boolean"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "threshold": {
+          "title": "Threshold",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run_id",
+        "case_id",
+        "passed",
+        "threshold",
+        "repeated"
+      ],
+      "title": "Signal",
+      "type": "object"
+    },
+    "Validation": {
+      "additionalProperties": false,
+      "properties": {
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "valid": {
+          "title": "Valid",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "valid"
+      ],
+      "title": "Validation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "_id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "changes": {
+      "items": {
+        "$ref": "#/$defs/Change"
+      },
+      "title": "Changes",
+      "type": "array"
+    },
+    "config": {
+      "additionalProperties": true,
+      "title": "Config",
+      "type": "object"
+    },
+    "config_hash": {
+      "title": "Config Hash",
+      "type": "string"
+    },
+    "control_plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ControlPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "decision_reasons": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Decision Reasons",
+      "type": "array"
+    },
+    "expected_effect": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Effect"
+    },
+    "parent_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parent Id"
+    },
+    "pinned": {
+      "default": false,
+      "title": "Pinned",
+      "type": "boolean"
+    },
+    "rationale": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rationale"
+    },
+    "risks": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Risks"
+    },
+    "status": {
+      "enum": [
+        "baseline",
+        "candidate",
+        "accepted",
+        "rejected",
+        "rolled_back"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "validation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Validation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "_id",
+    "parent_id",
+    "config",
+    "config_hash",
+    "status",
+    "created_at"
+  ],
+  "title": "HarnessVersion",
+  "type": "object"
+}
