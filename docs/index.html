@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Race Engineer Adaptive Harness</title>
-<meta name="description" content="A race engineer agent inside a self-improving harness, with every run recorded in MongoDB Atlas. What was built on 2026-09-26.">
+<title>Adaptive Harness: an agentic engineering team that learns from its own runs</title>
+<meta name="description" content="An agentic engineering team inside a harness that learns from its own recorded runs, with a fixed evaluator deciding and MongoDB Atlas as its memory. What was built on 2026-09-26.">
 <style>
 :root {
   --bg: #ffffff; --fg: #1a1a1a; --muted: #555555; --line: #d0d0d0; --card: #f7f7f7;
@@ -75,8 +75,8 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <main>
 
 <header>
-<h1>Race Engineer Adaptive Harness</h1>
-<p class="lede">A race engineer agent that briefs safety-car (SC) and virtual-safety-car (VSC) history from public FastF1 timing data, inside a self-improving harness. The harness is the product. Built on 2026-09-26 at the MongoDB hackathon, for the Recursive Harnessing problem statement.</p>
+<h1>Adaptive Harness: an agentic engineering team that learns from its own runs</h1>
+<p class="lede">An agentic engineering team (a data engineer, a statistician, and the lead role that writes the brief, named <code>race_engineer</code> in the code) whose harness learns from its own recorded runs and proposes changes to its own configuration. A fixed evaluator decides which changes are kept, and MongoDB Atlas, including Atlas Vector Search for lessons, is its memory. The harness is the product. Built on 2026-09-26 at the MongoDB hackathon for Statement One, Recursive Harnessing, and trialed on briefs built from public motorsport timing data (FastF1).</p>
 <p class="note">This project is unofficial and is not associated with the Formula 1 companies.</p>
 <nav>
 <a href="#what">What it is</a><a href="#how">How it works</a><a href="#improve">How it improves</a>
@@ -87,10 +87,10 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 
 <section id="what">
 <h2>What it is</h2>
-<p>The claim under test: a harness that records its own runs can find the root causes of its defects in those records and change its own process so that it passes more checks on a fixed evaluation it cannot edit, without getting worse elsewhere.</p>
-<p>The agent does a race engineer's job in two task types:</p>
+<p>The claim under test: a harness that records its own runs can find the root causes of its defects in those records and change its own process so that it passes more checks on a fixed evaluation it cannot edit, without getting worse elsewhere. The design fits any analytics and engineering workflow where outputs must cite their evidence.</p>
+<p>In the trial, the team writes two brief types:</p>
 <ul>
-<li><code>venue_brief</code>: how often Grand Prix races at a venue were interrupted by an SC or a VSC, with counts, rates, and 90% Wilson intervals.</li>
+<li><code>venue_brief</code>: how often Grand Prix races at a venue were interrupted by a safety car (SC) or a virtual safety car (VSC), with counts, rates, and 90% Wilson intervals.</li>
 <li><code>race_audit</code>: whether a given race had an SC, a VSC, or a red flag.</li>
 </ul>
 <p>Every message, tool call, tool result, check, and decision is written to MongoDB Atlas. An improvement cycle (DMAIC: define, measure, analyze, improve, control) reads those records, proposes changes to the harness configuration, and keeps a change only if a fixed evaluator, running as a separate process, shows it passes more checks without regressions.</p>
