@@ -47,6 +47,8 @@ class ExperimentData:
     versions: dict[str, dict[str, Any]]
     lessons: list[dict[str, Any]]
     events: dict[str, dict[str, Any]] = field(default_factory=dict)  # cited events by id
+    # run_id -> error events of every run that ended HARNESS (the measurement-system cause)
+    harness_errors: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
 
     @property
     def cases(self) -> list[str]:
@@ -144,8 +146,13 @@ def load(store: Store, experiment_id: str) -> ExperimentData:
                 if ev is not None:
                     events[eid] = ev
 
+    harness_errors = {
+        r["_id"]: store.find("events", {"run_id": r["_id"], "type": "error"}, sort=[("seq", 1)])
+        for a in arms.values() for r in a.all_runs if r.get("status") == HARNESS_STATUS
+    }
+
     return ExperimentData(experiment=exp, case_sets=case_sets, arms=arms, versions=versions,
-                          lessons=lessons, events=events)
+                          lessons=lessons, events=events, harness_errors=harness_errors)
 
 
 def _single(values: set[Any]) -> Any:

@@ -166,7 +166,7 @@ def measure_section(d: ExperimentData) -> str:
             "",
             f"- Evaluator SHA-256: {', '.join(f'`{x}`' for x in h.get('evaluator_sha256', []))}",
             f"- Answer-key SHA-256: {', '.join(f'`{x}`' for x in h.get('key_sha256', []))} (matches `data/key.sha256`)",
-            f"- HARNESS reruns: {len(art.get('harness_reruns', []))}",
+            f"- HARNESS reruns made by the measure phase: {len(art.get('harness_reruns', []))}",
             "",
             "Re-score of every baseline run in a fresh evaluator process:",
             "",
@@ -175,6 +175,19 @@ def measure_section(d: ExperimentData) -> str:
                     ", ".join(r.get("differing_checks", [])) or "none") for r in art.get("rescore", [])]),
             "",
         ]
+        rep = art.get("repeat")
+        if rep:
+            changed = rep.get("changed_checks") or []
+            out += ["### Repeat of the development cases", "",
+                    f"The development cases ran once more under {rep.get('version')} on {rep.get('snapshot')} "
+                    f"(arm repeat) and were compared check by check with the baseline: "
+                    f"{rep.get('cases_compared', 0)} case(s) compared; checks that changed between the identical "
+                    f"runs: {', '.join(map(str, changed)) if changed else 'none'}.", ""]
+            by_id = rep.get("checks_changed_by_id") or {}
+            if by_id:
+                out.append(table(["check", *by_id], [("changes", *by_id.values())]))
+                out.append("")
+    out += harness_section(d)
     arms = list(d.arms.values())
     out += ["### Defects per opportunity by arm", "",
             "Each cell is DPO with (defects/opportunities). HARNESS and NA are neither.", ""]
@@ -206,6 +219,28 @@ def measure_section(d: ExperimentData) -> str:
                        f"{n(m['output_tokens'])} | {n(m['cache_read_tokens'])} | {secs(m['wall_seconds'])} |")
     out += ["", "No sigma level or capability index is reported (see Limits)."]
     return "\n".join(out)
+
+
+def harness_section(d: ExperimentData) -> list[str]:
+    """Runs that ended HARNESS (measurement-system failures), their cause, and the rerun scored instead."""
+    rows = []
+    for a in d.arms.values():
+        for r in a.all_runs:
+            if r["_id"] not in d.harness_errors:
+                continue
+            errs = [e for e in d.harness_errors[r["_id"]]
+                    if isinstance(e.get("content"), dict) and e["content"].get("status") == "harness_error"]
+            errs = errs or d.harness_errors[r["_id"]][-1:]
+            cause = excerpt((errs[-1].get("content") or {}).get("message") if errs else "no error event recorded", 220)
+            scored = a.runs.get(r["case_id"])
+            replaced = scored["_id"] if scored and scored["_id"] != r["_id"] else "none"
+            rows.append((a.arm, r["case_id"], r["_id"], cause, replaced))
+    if not rows:
+        return []
+    return ["### HARNESS results", "",
+            "Measurement-system failures: neither defects nor opportunities. Each case was rerun once and the "
+            "rerun is the run scored.", "",
+            table(["arm", "case", "run id", "cause (recorded error)", "rerun scored"], rows), ""]
 
 
 def check_counts(a: ArmData, cid: str) -> tuple[int, int]:

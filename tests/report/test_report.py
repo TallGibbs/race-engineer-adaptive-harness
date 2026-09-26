@@ -251,3 +251,19 @@ def test_maps_export_folder_follows_output_name(store, tmp_path, monkeypatch):
     assert cli.maps(["--versions", "v1,v2", "--experiment", "x1", "--out", str(out)]) == 0
     assert {p.parent.name for p in seen} == {"maps_x1"}
     assert "(maps_x1/v1_process.svg)" in out.read_text(encoding="utf-8")
+
+
+def test_measure_shows_repeat_and_harness_runs(store):
+    store.insert("runs", {**store.get("runs", "P1-baseline"), "_id": "P1-old", "status": "harness_error",
+                          "started_at": T0 - timedelta(minutes=5)})
+    store.insert("events", {"_id": "P1-old:00000", "run_id": "P1-old", "seq": 0, "type": "error",
+                            "content": {"error": "ModelUnavailable", "message": "credit balance is too low",
+                                        "status": "harness_error"}, "created_at": T0})
+    exp = store.get("experiments", "x1")
+    exp["dmaic"]["measure"]["artifact"]["repeat"] = {"cases_compared": 2, "changed_checks": [], "version": "v1",
+                                                     "snapshot": "M0", "checks_changed_by_id": {"E7": 0}}
+    store.update("experiments", "x1", {"dmaic": exp["dmaic"]})
+    text = markdown.render(load(store, "x1"))
+    assert "### Repeat of the development cases" in text and "2 case(s) compared" in text
+    assert "runs: none." in text
+    assert "| baseline | P1 | P1-old | credit balance is too low | P1-baseline |" in text
