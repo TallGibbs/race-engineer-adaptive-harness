@@ -272,13 +272,25 @@ through `npx -y @mermaid-js/mermaid-cli`; `--no-export` skips that:
 python -m adaptive_harness maps --versions v1,v2 --experiment exp1
 ```
 
-Print a stored run's events in order:
-
-```bash
-python -m adaptive_harness show run <run_id>
-```
-
 `python -m adaptive_harness --help` lists every command, and each command takes `--help`.
+
+## Inspecting the records
+
+`show` reads the MongoDB records directly and prints them compactly (`--width` sets the
+line width):
+
+| command | prints |
+|---|---|
+| `python -m adaptive_harness show run <run_id>` | a run's events in order |
+| `python -m adaptive_harness show experiment <experiment_id>` | phases and tollgates, decision, acceptance, versions, runs per arm |
+| `python -m adaptive_harness show version <version_id>` | config hash, status, pinned, parent, each change |
+| `python -m adaptive_harness show lesson <lesson_id>` | one root cause: categories, why-chain, lesson text |
+| `python -m adaptive_harness show lessons --query "<text>" [--snapshot M1]` | Atlas Vector Search over the lessons |
+| `python -m adaptive_harness show cost --experiment <experiment_id>` | model calls and tokens by arm, role, and model (no prices) |
+
+[reports/explain_control_checks.md](reports/explain_control_checks.md) records the query
+plan of the evaluator's control-history query before and after the `control_checks`
+index.
 
 ## Data
 
