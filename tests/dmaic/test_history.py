@@ -7,7 +7,8 @@ from adaptive_harness.contracts import load_config
 from adaptive_harness.contracts.records import Experiment, HarnessVersion
 from adaptive_harness.dmaic.improve import propose
 from adaptive_harness.dmaic.validate import validate_proposal
-from adaptive_harness.store.records import save_experiment, save_version
+from adaptive_harness.contracts.records import Tollgate
+from adaptive_harness.store.records import save_experiment, save_phase, save_version
 
 from .fakes import CTL, HELD, T0
 from .test_improve_control_cycle import LESSON, analyzed, make_outcome, proposal
@@ -35,6 +36,21 @@ def seed(w, vid, status, ops, acceptance=None, reasons=()):
                                      {"id": CTL, "set": "control"}],
             arms=["baseline"], acceptance=acceptance, decision="rejected", candidate_version=vid, created_at=T0,
         ))
+
+
+def seed_refused(w, eid, ops, reasons, when=T0):
+    """An earlier experiment whose improve proposal the validator refused outright."""
+    save_experiment(w.store, Experiment(
+        _id=eid, cases=[{"id": "dev1", "set": "development"}, {"id": HELD, "set": "held_out"},
+                        {"id": CTL, "set": "control"}],
+        arms=["baseline"], created_at=when,
+    ))
+    art = {"from": "v1", "snapshot": "M1", "retrieval": "metadata", "root_causes": [LESSON],
+           "proposal": {"changes": [{"op": o, "lesson_id": LESSON, "why": f"see {HELD}"} for o in ops],
+                        "rationale": "r", "expected_effect": "e", "risks": f"{CTL} might regress"},
+           "validation": {"valid": False, "reasons": list(reasons)}}
+    save_phase(w.store, eid, "improve", art, Tollgate(passed=False, reasons=["proposal rejected", *reasons]),
+               status="stopped", completed_at=when)
 
 
 def verdicts(r1=True, r2=True, r3=True):
@@ -128,3 +144,59 @@ def test_first_cycle_has_no_history_and_an_unchanged_prompt():
     result = propose(w.deps, "exp1", "v1", "M1")
     assert result["valid"] and result["artifact"]["history"] == []
     assert "Earlier proposals" not in prompt_of(w)
+
+
+# ---------------------------------------------------------------- validator-refused proposals
+
+BAD_PATH = "change 1: /budgets/0 is not an editable path"
+
+
+def test_refused_proposal_is_shown_with_the_validator_reasons():
+    w = analyzed(make_outcome(), extra_script=[proposal()])
+    seed(w, "v2", "rejected", [K3], verdicts(r2=False), reasons=[f"R2 improvement: {R2_DETAIL}"])
+    seed_refused(w, "exp0", [{"op": "replace", "path": "/budgets/0", "value": 9}],
+                 [BAD_PATH, f"case {HELD} would be affected"])
+
+    result = propose(w.deps, "exp1", "v1", "M1")
+    assert result["valid"] and result["candidate_version"] == "v3"
+    assert result["artifact"]["history"] == ["v2", "exp0 (refused by the validator)"]
+    assert w.experiment()["dmaic"]["improve"]["artifact"]["history"] == ["v2", "exp0 (refused by the validator)"]
+
+    prompt = prompt_of(w)
+    assert '"experiment_id": "exp0"' in prompt and '"status": "refused by the validator"' in prompt
+    assert '"path": "/budgets/0"' in prompt and BAD_PATH in prompt
+    assert "non-development cases (withheld)" in prompt
+    assert '"version_id": "v2"' in prompt
+    # no held-out or control details, and none of the refused proposal's free text
+    for leak in (HELD, CTL, R1_DETAIL, R3_DETAIL, "might regress"):
+        assert leak not in prompt
+
+
+def test_exact_repeat_of_a_refused_proposal_is_refused():
+    w = analyzed(make_outcome(), extra_script=[proposal()])
+    seed_refused(w, "exp0", [X1], ["the proposal has no rationale"])
+    result = propose(w.deps, "exp1", "v1", "M1")
+    assert result["valid"] is False
+    assert "repeats refused proposal from exp0" in result["reasons"]
+    assert w.store.get("harness_versions", "v2") is None
+    art = w.experiment()["dmaic"]["improve"]["artifact"]
+    assert art["history"] == ["exp0 (refused by the validator)"]
+
+
+def test_validator_refuses_repeats_of_refused_proposals_order_insensitively():
+    def run(p):
+        return validate_proposal(p, parent(), LESSONS, new_version_id="v3", refused_proposals={"exp0": [X1, K3]})[2]
+
+    reasons = run(bare(change("replace", "/context_policy/lessons/k", 3, lesson="L-material"),
+                       change("add", "/stages/0", "X1")))
+    assert reasons == ["repeats refused proposal from exp0"]
+    assert run(bare(change("add", "/stages/0", "X1"))) == []
+
+
+def test_the_current_experiments_own_refusal_is_not_history():
+    w = analyzed(make_outcome(), extra_script=[proposal({"op": {"op": "add", "path": "/budgets/0", "value": 1},
+                                                          "lesson_id": LESSON, "why": "w"}),
+                                               proposal()])
+    assert propose(w.deps, "exp1", "v1", "M1")["valid"] is False
+    result = propose(w.deps, "exp1", "v1", "M1")
+    assert result["valid"] and result["artifact"]["history"] == []

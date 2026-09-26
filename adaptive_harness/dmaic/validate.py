@@ -3,7 +3,8 @@
 Code checks, in order: the proposal's shape; the change cap; every path (and `from`
 path) on the editable whitelist; every change citing a verified controllable root cause
 whose cause category is the surface of the path; the change set is not that of an
-earlier rejected or rolled-back version; the patch applies; the fixed parts of the
+earlier rejected or rolled-back version, nor of a proposal the validator refused in an
+earlier experiment; the patch applies; the fixed parts of the
 configuration are unchanged; and the result validates as a HarnessConfig (bounds and
 stage order). Any problem rejects the whole proposal.
 """
@@ -142,12 +143,15 @@ def validate_proposal(
     new_version_id: str,
     lesson_status: str = "verified",
     refused: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
+    refused_proposals: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
 ) -> tuple[dict[str, Any] | None, list[Change], list[str]]:
     """Validate a proposal against its parent configuration.
 
     `lessons` maps lesson id to the root causes the agent was given (only those may be
     cited). `refused` maps the id of each earlier rejected or rolled-back version to its
     JSON Patch ops; a proposal with the same change set (order-insensitive) is refused.
+    `refused_proposals` maps an earlier experiment id to the ops of the proposal the
+    validator refused there; an exact repeat of one is refused too.
     Returns (candidate config dict or None, changes, reasons); no reasons means valid.
     """
     if not isinstance(proposal, Mapping):
@@ -194,9 +198,12 @@ def validate_proposal(
                     f"change {i}: {op.path} is a {surface} surface but root cause {change.lesson_id} "
                     f"is a {lesson.get('cause_category')} cause"
                 )
-    if refused and len(changes) == len(raw):
+    if (refused or refused_proposals) and len(changes) == len(raw):
         mine = change_set([c.op.model_dump(by_alias=True) for c in changes])
-        reasons += [f"repeats rejected proposal {vid}" for vid, ops in refused.items() if change_set(ops) == mine]
+        reasons += [f"repeats rejected proposal {vid}" for vid, ops in (refused or {}).items()
+                    if change_set(ops) == mine]
+        reasons += [f"repeats refused proposal from {eid}" for eid, ops in (refused_proposals or {}).items()
+                    if change_set(ops) == mine]
     if reasons:
         return None, changes, reasons
 

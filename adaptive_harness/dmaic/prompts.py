@@ -196,10 +196,11 @@ def proposal(
         earlier = (
             "Earlier proposals for this task, oldest first: each version's changes (JSON Patch "
             "operation and the lesson_id it cited), its status, and its outcome on the "
-            "development cases only:\n"
+            "development cases only; and each proposal refused by the validator in an earlier "
+            "experiment, with its changes and the validator's reasons:\n"
             f"{_json(list(history))}\n\n"
             "A proposal whose set of changes (in any order) equals that of an earlier rejected "
-            "or rolled_back version will be refused.\n\n"
+            "or rolled_back version, or of a proposal refused by the validator, will be refused.\n\n"
         )
     user = (
         "Phase: improve.\n\n"
