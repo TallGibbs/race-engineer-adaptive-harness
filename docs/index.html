@@ -80,7 +80,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <p class="note">This project is unofficial and is not associated with the Formula 1 companies.</p>
 <p class="note">Reports and command output use short identifiers such as S4, E7, R2, D2, v4, and M1. Each family is explained in <a href="#terms">Terms</a>.</p>
 <nav>
-<a href="#what">What it is</a><a href="#how">How it works</a><a href="#improve">How it improves</a>
+<a href="#what">What it is</a><a href="#cycle">How it improves itself</a><a href="#how">How it works</a><a href="#improve">How it improves</a>
 <a href="#mongodb">MongoDB</a><a href="#experiments">Experiments</a><a href="#learned">What we learned</a>
 <a href="#provenance">Provenance</a><a href="#limits">Limits</a><a href="#terms">Terms</a><a href="#links">Links</a>
 </nav>
@@ -95,6 +95,15 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <li>A race audit (<code>race_audit</code>): whether a given race had an SC, a VSC, or a red flag.</li>
 </ul>
 <p>Every message, tool call, tool result, check, and decision is written to MongoDB Atlas. An improvement cycle reads those records, proposes changes to the harness configuration, and keeps a change only if a fixed evaluator, running as a separate process, shows it passes more checks without getting worse anywhere. The cycle follows the five phases of DMAIC, a method from Six Sigma quality work: define the problem, measure it, analyze its causes, improve the process, and control the result.</p>
+</section>
+
+<section id="cycle">
+<h2>How the harness improves itself</h2>
+<p>Each improvement cycle runs five phases in order: define the problem, measure it, analyze its causes, improve the process, and control the result. The improvement agent writes each phase; code decides whether the cycle may continue, and at improve the fixed evaluator's scores decide whether a proposed version is kept.</p>
+<figure>
+<a href="img/dmaic_cycle.svg"><img src="img/dmaic_cycle.svg" style="max-width:100%;height:auto;display:block;background:#fff;border-radius:6px" alt="The DMAIC cycle as it ran in experiment exp1: define, measure, and analyze passed, and the cycle stopped at improve because the fixed evaluator scored the candidate version v2 no better than the current version v1 on the development cases (rule R2). Control was not reached, so v1 stayed in use."></a>
+<figcaption>The cycle as it ran in exp1, drawn from the recorded experiment. The candidate (v2) passed 11 development checks against 11 for the current version (v1), so rule <a href="#terms">R2</a> failed and the cycle stopped at improve. Ids in the diagram (<a href="#terms">M0</a>, <a href="#terms">D1 to P2</a>, <a href="#terms">v1, v2</a>, <a href="#terms">HARNESS</a>, and the <a href="#terms">baseline, memory_only, and candidate arms</a>) are explained in <a href="#terms">Terms</a>. Select the diagram to open it full size.</figcaption>
+</figure>
 </section>
 
 <section id="how">
