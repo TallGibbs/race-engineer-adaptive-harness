@@ -24,7 +24,7 @@ def _bit(*parts: Any) -> int:
 
 
 def _event_date(year: int, rnd: int) -> date:
-    return date(year, 3, 1) + timedelta(days=14 * (rnd - 1))
+    return date(year, 3, 1) + timedelta(days=10 * (rnd - 1))
 
 
 def _events(args: dict, as_of: date) -> ToolResult:
