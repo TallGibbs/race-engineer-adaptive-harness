@@ -21,6 +21,9 @@ VECTOR_FILTER_FIELDS: tuple[str, ...] = ("scope", "status", "snapshot")
 
 # Secondary indexes per collection. The events (run_id, seq) index is the idempotency
 # guard; the partial unique index on pinned allows at most one pinned harness version.
+# control_checks serves the evaluator's control history query
+#   {"type": "check", "content.control": {"$exists": true}, "content.version": <id>}:
+# equality fields in the key, and only control outcomes in the (partial) index.
 INDEXES: dict[str, list[IndexModel]] = {
     "runs": [
         IndexModel([("experiment_id", ASCENDING), ("arm", ASCENDING), ("case_id", ASCENDING)], name="experiment_arm_case"),
@@ -30,6 +33,8 @@ INDEXES: dict[str, list[IndexModel]] = {
     "events": [
         IndexModel([("run_id", ASCENDING), ("seq", ASCENDING)], name="run_seq", unique=True),
         IndexModel([("run_id", ASCENDING), ("type", ASCENDING)], name="run_type"),
+        IndexModel([("content.version", ASCENDING), ("type", ASCENDING)], name="control_checks",
+                   partialFilterExpression={"content.control": {"$exists": True}}),
     ],
     "harness_versions": [
         IndexModel([("pinned", ASCENDING)], name="one_pinned", unique=True,
@@ -250,6 +255,11 @@ class MongoStore:
         result = self._coll(collection).update_one({"_id": _id}, {"$set": dict(set_fields)})
         if result.matched_count == 0:
             raise KeyError(f"{collection}: {_id}")
+
+    def aggregate(self, collection: str, pipeline: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+        """Run an aggregation pipeline (read-only use: the show commands). Not part of the
+        Store protocol; callers fall back to find() on stores without it."""
+        return list(self._coll(collection).aggregate([dict(stage) for stage in pipeline]))
 
     def append_event(self, event: Mapping[str, Any]) -> bool:
         doc = dict(event)

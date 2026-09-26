@@ -33,6 +33,18 @@ def test_indexes_cover_every_collection_and_event_uniqueness():
     assert pinned["unique"] and pinned["partialFilterExpression"] == {"pinned": True}
 
 
+def test_control_checks_index_serves_the_control_history_query():
+    # The evaluator's query (adaptive_harness/evaluate/control.py, _control_events):
+    query = {"type": "check", "content.control": {"$exists": True}, "content.version": "v2"}
+    idx = [i.document for i in INDEXES["events"] if i.document["name"] == "control_checks"][0]
+    assert list(idx["key"].items()) == [("content.version", 1), ("type", 1)]
+    assert set(idx["key"]) <= set(query)  # every key field is an equality predicate of the query
+    # The partial filter is a predicate the query carries verbatim, so the planner may use it.
+    assert idx["partialFilterExpression"] == {"content.control": {"$exists": True}}
+    assert query["content.control"] == idx["partialFilterExpression"]["content.control"]
+    assert not idx.get("unique")
+
+
 def test_vector_index_definition():
     d = vector_index_definition()
     vec = [f for f in d["fields"] if f["type"] == "vector"][0]
