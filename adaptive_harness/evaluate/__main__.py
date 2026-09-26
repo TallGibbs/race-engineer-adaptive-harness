@@ -1,6 +1,5 @@
-"""python -m adaptive_harness.evaluate  (lane evaluate replaces this stub)."""
+"""python -m adaptive_harness.evaluate (see cli.py)."""
 
-import sys
+from .cli import main
 
-print("'evaluate' is not implemented yet: owned by lane evaluate (adaptive_harness/evaluate/).", file=sys.stderr)
-raise SystemExit(2)
+raise SystemExit(main())
