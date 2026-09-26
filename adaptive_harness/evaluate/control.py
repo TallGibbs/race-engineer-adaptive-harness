@@ -99,7 +99,7 @@ def check_run(ev: Evaluator, run_id: str) -> dict[str, Any]:
     elif threshold is None:
         content.update(control="not_compared", reasons=[f"the plan has no threshold for case {case_id}"])
     else:
-        evaluation = ev.evaluation_for(run_id)
+        evaluation = ev.evaluation_for(run_id, control=False)
         passed = sum(1 for c in evaluation["checks"] if c["result"] == "PASS")
         prior = _history(ev, version_id, case_id)
         if passed < threshold:

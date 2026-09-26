@@ -117,9 +117,9 @@ class Evaluator:
     def experiment_runs(self, experiment_id: str) -> list[dict[str, Any]]:
         return self.store.find("runs", {"experiment_id": experiment_id}, sort=[("started_at", 1)])
 
-    def evaluation_for(self, run_id: str) -> dict[str, Any]:
+    def evaluation_for(self, run_id: str, control: bool = True) -> dict[str, Any]:
         """The stored evaluation of a run, scoring and storing it first when there is none."""
-        return self.stored(run_id) or self.evaluate(run_id)[0]
+        return self.stored(run_id) or self.evaluate(run_id, control=control)[0]
 
     def version(self, version_id: str) -> HarnessVersion | None:
         doc = self.store.get("harness_versions", version_id)
