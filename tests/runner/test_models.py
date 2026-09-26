@@ -74,7 +74,7 @@ def test_anthropic_request_shape():
     assert q["system"][0]["text"] == "stable system" and q["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert q["messages"] == [{"role": "user", "content": "go"}]
     assert r.parsed == {"action": "finish", "output": {"summary": "s"}}
-    assert r.usage.input_tokens == 10 and r.usage.cache_read_tokens == 1000 and r.usage.output_tokens == 5
+    assert r.usage.input_tokens == 110 and r.usage.cache_read_tokens == 1000 and r.usage.output_tokens == 5
     assert r.stop_reason == "end_turn"
 
 

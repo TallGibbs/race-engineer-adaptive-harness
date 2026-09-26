@@ -16,10 +16,11 @@ Two real clients share one interface: `AnthropicClient` and `OpenAICompatClient`
 Usage fields (`ModelResponse.usage`), chosen so a cost calculation never counts a token
 twice:
 
-- `input_tokens`: input tokens billed at the full input rate, excluding cache reads.
-  Anthropic: `usage.input_tokens` exactly as reported (uncached input only). Anthropic
-  cache-write tokens (`cache_creation_input_tokens`) are reported by the provider
-  separately and have no field in the contract, so they are not counted here.
+- `input_tokens`: input tokens other than cache reads.
+  Anthropic: `usage.input_tokens` (uncached input) plus `cache_creation_input_tokens`
+  (cache writes). Cache writes are counted as input because the contract has no field
+  for them, so cost figures built from input_tokens price them at the input rate and
+  slightly understate them (the provider bills cache writes above the input rate).
   OpenAI-compatible: `prompt_tokens - prompt_tokens_details.cached_tokens`, because
   those endpoints report cached tokens inside `prompt_tokens`.
 - `cache_read_tokens`: input tokens served from the provider's prompt cache.
@@ -149,7 +150,7 @@ class AnthropicClient(_BaseClient):
         text = "" if stop == "refusal" else "".join(b.text for b in msg.content if b.type == "text")
         u = msg.usage
         usage = ModelUsage(
-            input_tokens=u.input_tokens or 0,
+            input_tokens=(u.input_tokens or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0),
             output_tokens=u.output_tokens or 0,
             cache_read_tokens=getattr(u, "cache_read_input_tokens", 0) or 0,
         )
