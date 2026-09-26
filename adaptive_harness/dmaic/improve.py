@@ -41,7 +41,7 @@ from .common import (
     score_missing,
     sync_arms,
 )
-from .history import proposal_history, refused_change_sets
+from .history import history_label, proposal_history, refused_change_sets, validator_refused_change_sets
 from .ports import Deps
 from .validate import validate_proposal
 
@@ -141,8 +141,8 @@ def propose(deps: Deps, experiment_id: str, from_version: str, snapshot: str) ->
     charter = {**(define_artifact.get("charter") or {}), "problem_statement": define_artifact.get("problem_statement")}
     views = [_root_cause_view(deps, h) for h in hits]
     cap = parent.config.get("change_cap", 0)
-    history = proposal_history(deps, parent_config.get("task_family"))
-    artifact["history"] = [h["version_id"] for h in history]
+    history = proposal_history(deps, parent_config.get("task_family"), exclude_experiment=experiment_id)
+    artifact["history"] = [history_label(h) for h in history]
     system, user = prompts.proposal(
         deps.cycle, [r.statement for r in deps.acceptance.rules], parent_config, charter, views, cap, history
     )
@@ -151,7 +151,7 @@ def propose(deps: Deps, experiment_id: str, from_version: str, snapshot: str) ->
     version_id = next_version_id(deps)
     config, changes, problems = validate_proposal(
         proposal, parent_config, {h["_id"]: h for h in hits}, new_version_id=version_id,
-        refused=refused_change_sets(history),
+        refused=refused_change_sets(history), refused_proposals=validator_refused_change_sets(history),
     )
     artifact.update(agent=reply["call"], proposal=proposal, validation={"valid": not problems, "reasons": problems})
 
