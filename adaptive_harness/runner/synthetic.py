@@ -60,25 +60,33 @@ def _flags(year: int, rnd: int) -> dict[str, Any]:
 def _messages(args: dict, as_of: date) -> ToolResult:
     year, rnd = _race_check(args, as_of)
     f = _flags(year, rnd)
-    msgs = []
+    msgs = [{"lap": 1, "category": "Flag", "message": "GREEN LIGHT - PIT EXIT OPEN", "flag": "GREEN", "scope": "Track"}]
     for lap in f["sc_laps"]:
-        msgs.append({"lap": lap, "message": "SAFETY CAR DEPLOYED"})
+        msgs.append({"lap": lap, "category": "SafetyCar", "message": "SAFETY CAR DEPLOYED", "flag": None, "scope": None})
     for lap in f["vsc_laps"]:
-        msgs.append({"lap": lap, "message": "VIRTUAL SAFETY CAR DEPLOYED"})
+        msgs.append({"lap": lap, "category": "SafetyCar", "message": "VIRTUAL SAFETY CAR DEPLOYED", "flag": None,
+                     "scope": None})
     for lap in f["red_flag_laps"]:
-        msgs.append({"lap": lap, "message": "RED FLAG"})
+        msgs.append({"lap": lap, "category": "Flag", "message": "RED FLAG", "flag": "RED", "scope": "Track"})
     msgs.sort(key=lambda m: m["lap"])
-    text = "\n".join(f"lap {m['lap']}: {m['message']}" for m in msgs) or "(no neutralization messages)"
-    return ToolResult.build(f"SYNTHETIC race control {year} R{rnd}\n{text}",
-                            {"synthetic": True, "year": year, "round": rnd, "messages": msgs, **f})
+    text = "\n".join(f"{m['lap']} | {m['category']} | {m['message']}" for m in msgs)
+    return ToolResult.build(f"SYNTHETIC race control {year} R{rnd} (lap | category | message)\n{text}",
+                            {"year": year, "round": rnd, "event_name": f"Synthetic Grand Prix {rnd}", "messages": msgs})
 
 
 def _status(args: dict, as_of: date) -> ToolResult:
     year, rnd = _race_check(args, as_of)
     f = _flags(year, rnd)
-    text = ", ".join(f"{k}={f[k]}" for k in ("sc", "vsc", "red_flag"))
-    return ToolResult.build(f"SYNTHETIC track status {year} R{rnd}: {text}",
-                            {"synthetic": True, "year": year, "round": rnd, **f})
+    rows = [{"time": "0:00:00.000", "status": "1", "message": "AllClear"}]
+    if f["sc"]:
+        rows.append({"time": "0:30:00.000", "status": "4", "message": "SCDeployed"})
+    if f["vsc"]:
+        rows.append({"time": "0:40:00.000", "status": "6", "message": "VSCDeployed"})
+    if f["red_flag"]:
+        rows.append({"time": "0:50:00.000", "status": "5", "message": "Red"})
+    text = "\n".join(f"{r['time']} | {r['status']} | {r['message']}" for r in rows)
+    return ToolResult.build(f"SYNTHETIC track status {year} R{rnd} (time | status | message)\n{text}",
+                            {"year": year, "round": rnd, "event_name": f"Synthetic Grand Prix {rnd}", "track_status": rows})
 
 
 def _interval(args: dict, as_of: date) -> ToolResult:

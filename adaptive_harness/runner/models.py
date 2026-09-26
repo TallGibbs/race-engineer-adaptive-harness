@@ -12,6 +12,20 @@ Two real clients share one interface: `AnthropicClient` and `OpenAICompatClient`
   so the caller records an error instead of reading a partial answer;
 - retry twice on rate limits, server errors, and network errors (the SDKs' own retry
   policy), then raise `ModelUnavailable`.
+
+Usage fields (`ModelResponse.usage`), chosen so a cost calculation never counts a token
+twice:
+
+- `input_tokens`: input tokens billed at the full input rate, excluding cache reads.
+  Anthropic: `usage.input_tokens` exactly as reported (uncached input only). Anthropic
+  cache-write tokens (`cache_creation_input_tokens`) are reported by the provider
+  separately and have no field in the contract, so they are not counted here.
+  OpenAI-compatible: `prompt_tokens - prompt_tokens_details.cached_tokens`, because
+  those endpoints report cached tokens inside `prompt_tokens`.
+- `cache_read_tokens`: input tokens served from the provider's prompt cache.
+  Anthropic `cache_read_input_tokens`; OpenAI-compatible `cached_tokens`.
+- `output_tokens`: generated tokens as reported (Anthropic `output_tokens`,
+  OpenAI-compatible `completion_tokens`).
 """
 
 from __future__ import annotations
@@ -135,8 +149,7 @@ class AnthropicClient(_BaseClient):
         text = "" if stop == "refusal" else "".join(b.text for b in msg.content if b.type == "text")
         u = msg.usage
         usage = ModelUsage(
-            input_tokens=(u.input_tokens or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0)
-            + (getattr(u, "cache_read_input_tokens", 0) or 0),
+            input_tokens=u.input_tokens or 0,
             output_tokens=u.output_tokens or 0,
             cache_read_tokens=getattr(u, "cache_read_input_tokens", 0) or 0,
         )
@@ -190,7 +203,7 @@ class OpenAICompatClient(_BaseClient):
         if u is not None and getattr(u, "prompt_tokens_details", None) is not None:
             cached = getattr(u.prompt_tokens_details, "cached_tokens", 0) or 0
         usage = ModelUsage(
-            input_tokens=(u.prompt_tokens or 0) if u else 0,
+            input_tokens=max(0, (u.prompt_tokens or 0) - cached) if u else 0,
             output_tokens=(u.completion_tokens or 0) if u else 0,
             cache_read_tokens=cached,
         )

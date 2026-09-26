@@ -82,16 +82,62 @@ def _results_for(tool_results: list[Mapping[str, Any]], tool: str, year: int, rn
     return out
 
 
-def _source_flags(payload: Any) -> dict[str, tuple[bool, int | None]] | None:
-    """Flags a source reports for one race: flag -> (value, first lap or None)."""
-    if not isinstance(payload, Mapping) or not all(isinstance(payload.get(f), bool) for f in FLAGS):
+Flags = dict[str, tuple[bool, int | None]]  # flag -> (value, first lap, or None when the source has no laps)
+
+
+def _upper(v: Any) -> str:
+    return str(v).strip().upper() if v is not None else ""
+
+
+def flags_from_race_control(payload: Any) -> Flags | None:
+    """sc, vsc, red_flag from race control message rows (meanings as in data/definitions.md):
+    sc when the safety car is deployed or the race starts behind it; vsc when a virtual
+    safety car is deployed; red_flag when a red flag is shown. First laps from the rows."""
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("messages"), list):
         return None
-    out = {}
-    for f in FLAGS:
-        laps = payload.get(f"{f}_laps")
-        first = min((_as_int(x) for x in laps if _as_int(x) is not None), default=None) if isinstance(laps, list) else None
-        out[f] = (payload[f], first)
-    return out
+    laps: dict[str, list[int]] = {f: [] for f in FLAGS}
+    hit = {f: False for f in FLAGS}
+    for row in payload["messages"]:
+        if not isinstance(row, Mapping):
+            continue
+        msg, flag = _upper(row.get("message")), _upper(row.get("flag"))
+        found = []
+        if "VIRTUAL SAFETY CAR DEPLOYED" in msg:
+            found.append("vsc")
+        elif "SAFETY CAR DEPLOYED" in msg or ("START" in msg and "BEHIND" in msg and "SAFETY CAR" in msg):
+            found.append("sc")
+        if flag == "RED" or msg.startswith("RED FLAG"):
+            found.append("red_flag")
+        for f in found:
+            hit[f] = True
+            lap = _as_int(row.get("lap"))
+            if lap is not None:
+                laps[f].append(lap)
+    return {f: (hit[f], min(laps[f]) if laps[f] else None) for f in FLAGS}
+
+
+# Track status codes as recorded: 4 safety car deployed, 5 red flag, 6 virtual safety car deployed.
+_TRACK_CODES = {"4": "sc", "5": "red_flag", "6": "vsc"}
+_TRACK_WORDS = {"SCDEPLOYED": "sc", "RED": "red_flag", "VSCDEPLOYED": "vsc"}
+
+
+def flags_from_track_status(payload: Any) -> Flags | None:
+    """sc, vsc, red_flag from track status rows (status code or its message). These rows
+    carry session times, not laps, so no first lap is given."""
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("track_status"), list):
+        return None
+    hit = {f: False for f in FLAGS}
+    for row in payload["track_status"]:
+        if not isinstance(row, Mapping):
+            continue
+        f = _TRACK_CODES.get(str(row.get("status") or "").strip()) or _TRACK_WORDS.get(
+            _upper(row.get("message")).replace(" ", ""))
+        if f:
+            hit[f] = True
+    return {f: (hit[f], None) for f in FLAGS}
+
+
+SOURCES = {"race_control_messages": flags_from_race_control, "track_status": flags_from_track_status}
 
 
 def _races(brief: Mapping[str, Any], case_type: str) -> list[Mapping[str, Any]]:
@@ -129,15 +175,16 @@ def venue_match(brief: Mapping[str, Any], case_type: str, tool_results: list[Map
 def source_agreement(
     brief: Mapping[str, Any], case_type: str, tool_results: list[Mapping[str, Any]], tolerance_laps: int
 ) -> Result:
-    """For each race, race_control_messages and track_status agree on each flag (first laps
-    within tolerance when both give laps), and the brief matches what they agree on."""
+    """For each race, the flags derived from race_control_messages and from track_status
+    agree (first laps within tolerance when both sources give laps), and the brief matches
+    what they agree on."""
     reasons = []
     for r in _races(brief, case_type):
         year, rnd = _as_int(r.get("year")), _as_int(r.get("round"))
         label = f"{year} round {rnd}"
         per_source = {}
         for tool in ("race_control_messages", "track_status"):
-            found = [_source_flags(tr.get("payload")) for tr in _results_for(tool_results, tool, year, rnd)]  # type: ignore[arg-type]
+            found = [SOURCES[tool](tr.get("payload")) for tr in _results_for(tool_results, tool, year, rnd)]  # type: ignore[arg-type]
             found = [f for f in found if f is not None]
             if not found:
                 reasons.append(f"{label}: no comparable {tool} result recorded")

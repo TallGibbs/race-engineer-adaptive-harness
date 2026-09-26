@@ -52,6 +52,9 @@ def open_store(kind: str) -> Any:
         return store
     from .. import store as store_lane
 
+    mongo = getattr(store_lane, "MongoStore", None)
+    if mongo is not None and hasattr(mongo, "from_env"):
+        return mongo.from_env()  # MONGODB_URI, MONGODB_DB
     for name in ("open_store", "get_store", "MongoStore"):
         factory = getattr(store_lane, name, None)
         if factory is not None:

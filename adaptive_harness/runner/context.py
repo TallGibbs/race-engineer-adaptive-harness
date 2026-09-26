@@ -65,6 +65,13 @@ def fastembed_embedder() -> Embedder:
     cache: dict[str, Any] = {}
 
     def embed(text: str, model_name: str) -> Sequence[float]:
+        try:  # the store lane's query embedding, when it matches the lessons' model
+            from ..store import EMBEDDING_MODEL, embed_query
+
+            if model_name == EMBEDDING_MODEL:
+                return embed_query(text)
+        except ImportError:
+            pass
         if model_name not in cache:
             from fastembed import TextEmbedding
 
