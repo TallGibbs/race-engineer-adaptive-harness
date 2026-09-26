@@ -12,8 +12,15 @@ When Mermaid CLI is reachable through `npx` (npx -y @mermaid-js/mermaid-cli), ea
 diagram is also exported as SVG and PNG into a folder named after the output file
 (reports/maps.md -> reports/maps/).
 
-`show` is not defined here yet; the dispatcher falls back to the store lane's
-`show run <id>`.
+`show` prints stored records, read straight from the store:
+
+    show run <id>                    delegated to the store lane's `show run`
+    show experiment <id>
+    show version <id>
+    show lesson <id>
+    show lessons --query TEXT [--snapshot M1] [--status verified] [--k 5]
+    show cost --experiment E
+    every form takes --width N (default 100; `show run` keeps the store lane's default)
 """
 
 from __future__ import annotations
@@ -30,6 +37,7 @@ from typing import Any, Callable
 from ..contracts.interfaces import Store
 from ..contracts.paths import REPO_ROOT
 from . import maps as mapsmod
+from . import show as showmod
 from .data import ExperimentData, executed_stages, load
 from .markdown import render, run_chart_mermaid
 
@@ -239,4 +247,64 @@ def maps(argv: list[str]) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(maps_markdown(d, diagrams, versions, exported), encoding="utf-8", newline="\n")
     print(f"maps: wrote {_rel(out)}")
+    return 0
+
+
+# ---------------------------------------------------------------- show
+
+
+def _show_parser() -> argparse.ArgumentParser:
+    width = argparse.ArgumentParser(add_help=False)
+    width.add_argument("--width", type=int, default=argparse.SUPPRESS,
+                       help="wrap output to this many columns (default 100)")
+    p = argparse.ArgumentParser(prog="python -m adaptive_harness show", parents=[width],
+                                description="Show stored records, read straight from the store.")
+    sub = p.add_subparsers(dest="kind", required=True, metavar="<kind>")
+    for kind, help_text in (("run", "a run's events in order (store lane)"),
+                            ("experiment", "phases, tollgates, decision, acceptance, runs per arm"),
+                            ("version", "config hash, status, pinned, parent, changes"),
+                            ("lesson", "one lesson (root cause), without its vector")):
+        sub.add_parser(kind, parents=[width], help=help_text).add_argument("id")
+    q = sub.add_parser("lessons", parents=[width], help="vector search over lessons ($vectorSearch)")
+    q.add_argument("--query", required=True)
+    q.add_argument("--snapshot", default=None, help="pre-filter on snapshot, e.g. M1")
+    q.add_argument("--status", default=None, help="pre-filter on status, e.g. verified")
+    q.add_argument("--k", type=int, default=5)
+    c = sub.add_parser("cost", parents=[width], help="model calls and tokens by arm, role, and model")
+    c.add_argument("--experiment", required=True)
+    return p
+
+
+def show(argv: list[str]) -> int:
+    args = _show_parser().parse_args(argv)
+    width = getattr(args, "width", None)
+    if args.kind == "run":
+        from ..store import cli as store_cli
+
+        return store_cli.show(["run", args.id] + ([] if width is None else ["--width", str(width)]))
+    width = max(40, width or 100)
+
+    store = open_store()
+    try:
+        if args.kind == "experiment":
+            lines = showmod.show_experiment(store, args.id, width)
+        elif args.kind == "version":
+            lines = showmod.show_version(store, args.id, width)
+        elif args.kind == "lesson":
+            lines = showmod.show_lesson(store, args.id, width)
+        elif args.kind == "lessons":
+            from ..store.embeddings import embed_query
+
+            lines = showmod.show_lessons(store, args.query, embed_query, k=args.k, snapshot=args.snapshot,
+                                         status=args.status, width=width)
+        else:
+            lines = showmod.show_cost(store, args.experiment, width)
+    except KeyError as e:
+        print(f"show: {e.args[0]}", file=sys.stderr)
+        return 1
+    finally:
+        close = getattr(store, "close", None)
+        if close:
+            close()
+    print("\n".join(lines))
     return 0
