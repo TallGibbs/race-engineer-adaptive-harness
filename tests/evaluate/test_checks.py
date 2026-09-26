@@ -10,6 +10,7 @@ from adaptive_harness.contracts import Evaluation, event_id
 from adaptive_harness.evaluate.checks import CATEGORY, wilson_90
 
 from .synth import (
+    BUDGETS,
     R_1_OF_3,
     add_event,
     add_good_run,
@@ -181,7 +182,7 @@ def test_race_audit_failures(ev, store):
 def test_budget(ev, store):
     add_good_run(store, "b1", status="budget_exceeded")
     assert results(ev.score("b1").to_doc())["E8"] == "FAIL"
-    add_good_run(store, "b2", totals={"model_calls": 21, "tool_calls": 1, "wall_seconds": 5.0})
+    add_good_run(store, "b2", totals={"model_calls": BUDGETS["max_model_calls"] + 1, "tool_calls": 1, "wall_seconds": 5.0})
     assert results(ev.score("b2").to_doc())["E8"] == "FAIL"
 
 

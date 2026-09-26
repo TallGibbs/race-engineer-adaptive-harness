@@ -49,8 +49,8 @@ evaluator it cannot edit.
   (`ResolvedModel {provider, base_url, assignment {role: model}}`) is what runs and control
   plans record. One provider and one key (`MODEL_API_KEY`, never stored) serve every role.
   No sampling parameters (temperature, top_p, top_k) and no token limits exist anywhere.
-- `budgets` per case run: `max_model_calls` 20, `max_tool_calls` 40,
-  `max_wall_seconds` 600. No token budget.
+- `budgets` per case run: `max_model_calls` 40, `max_tool_calls` 60,
+  `max_wall_seconds` 900. No token budget.
 - `stages`: an ordered list of stage ids, v1 `["S1","S2a","S2b","S3","S4","S5","S6","S7"]`.
   Definitions live in the fixed `stage_catalog`:
 

@@ -76,22 +76,27 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else list(argv)
     parser = build_parser()
-    ns = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    if not ns.command:
+    if not argv or argv[0] not in SUBCOMMANDS:
+        # Top-level help, or an unknown command: argparse reports it.
+        parser.parse_args(argv)
         parser.print_help()
         return 0
+    # Hand everything after the subcommand to its handler unchanged. argparse's
+    # REMAINDER rejects a leading flag (e.g. `run --config ...`), so it is bypassed here.
+    command, args = argv[0], argv[1:]
     try:
-        handler = _handler(ns.command)
+        handler = _handler(command)
     except NotImplementedYet:
-        lane = SUBCOMMANDS[ns.command][0]
+        lane = SUBCOMMANDS[command][0]
         print(
-            f"'{ns.command}' is not implemented yet: owned by lane {lane} "
+            f"'{command}' is not implemented yet: owned by lane {lane} "
             f"(adaptive_harness/{lane}/cli.py).",
             file=sys.stderr,
         )
         return 2
-    return int(handler(list(ns.args)) or 0)
+    return int(handler(args) or 0)
 
 
 if __name__ == "__main__":

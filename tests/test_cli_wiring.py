@@ -52,3 +52,39 @@ def test_fallback_only_for_listed_subcommands(monkeypatch):
         pass
     else:
         raise AssertionError("expected NotImplementedYet")
+
+
+def _capture_handler(monkeypatch, name: str) -> list[list[str]]:
+    seen: list[list[str]] = []
+
+    def handler(argv):
+        seen.append(argv)
+        return 0
+
+    monkeypatch.setattr(entry, "_handler", lambda n: handler if n == name else None)
+    return seen
+
+
+def test_leading_flag_passes_through_unchanged(monkeypatch):
+    seen = _capture_handler(monkeypatch, "run")
+    argv = ["--config", "configs/v1.json", "--cases", "T1", "-x", "--", "tail"]
+    assert entry.main(["run", *argv]) == 0
+    assert seen == [argv]
+
+
+def test_flag_first_reaches_real_lane_handler(monkeypatch, capsys):
+    s = _fake_store(monkeypatch)
+    start_run(s, run_doc())
+    assert entry.main(["show", "--width", "60", "run", "r1"]) == 0
+    assert capsys.readouterr().out.startswith("run r1")
+
+
+def test_no_args_and_unknown_command(capsys):
+    assert entry.main([]) == 0
+    assert "<command>" in capsys.readouterr().out
+    try:
+        entry.main(["no-such-command"])
+    except SystemExit as e:
+        assert e.code == 2
+    else:
+        raise AssertionError("expected argparse to reject an unknown command")
