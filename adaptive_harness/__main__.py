@@ -2,8 +2,8 @@
 
 Each subcommand is owned by a lane. The lane implements it by providing a function
 `<name>(argv: list[str]) -> int` (hyphens become underscores) in
-adaptive_harness/<lane>/cli.py and parses its own arguments there. This file never
-needs editing.
+adaptive_harness/<lane>/cli.py and parses its own arguments there. A subcommand whose
+owning lane has not provided its handler yet may fall back to another lane's (FALLBACKS).
 """
 
 from __future__ import annotations
@@ -27,6 +27,12 @@ SUBCOMMANDS: dict[str, tuple[str, str]] = {
     "show": ("report", "Show a stored run, version, experiment, or lesson."),
 }
 
+# subcommand -> lane whose handler serves it until the owning lane provides one.
+# `show run <id>` is implemented by the store lane; the report lane may extend `show`.
+FALLBACKS: dict[str, str] = {
+    "show": "store",
+}
+
 
 class NotImplementedYet(Exception):
     pass
@@ -34,6 +40,15 @@ class NotImplementedYet(Exception):
 
 def _handler(name: str):
     lane, _ = SUBCOMMANDS[name]
+    try:
+        return _lane_handler(name, lane)
+    except NotImplementedYet:
+        if name not in FALLBACKS:
+            raise
+        return _lane_handler(name, FALLBACKS[name])
+
+
+def _lane_handler(name: str, lane: str):
     func = name.replace("-", "_")
     try:
         module = importlib.import_module(f"adaptive_harness.{lane}.cli")
