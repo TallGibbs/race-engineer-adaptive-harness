@@ -142,6 +142,18 @@ compared.
 - `reports/maps.md`: Mermaid maps of the v1 process, the cycle as it ran, and v1
   against v2, generated from the stored configurations and records, not drawn by hand;
   SVG and PNG exports in `reports/maps/`.
+- `reports/exp2.md` and `reports/maps_exp2.md` (exports in `reports/maps_exp2/`): the
+  second cycle, with v1 against v3.
+
+## Experiments
+
+- [exp1](reports/exp1.md): rejected; the cycle stopped at improve on R2 (candidate v2,
+  enabling `venue_match`, passed 11 development checks, the same as v1). v1 stays pinned.
+- [exp2](reports/exp2.md): rejected; the cycle stopped at improve on R2 (candidate v3,
+  enabling `source_agreement`, proposed after seeing v2's outcome, passed 11 development
+  checks, the same as v1). v1 stays pinned.
+
+Maps: [exp1](reports/maps.md), [exp2](reports/maps_exp2.md).
 
 ## How to run
 
