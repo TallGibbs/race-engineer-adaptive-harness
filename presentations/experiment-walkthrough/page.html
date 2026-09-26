@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Inside the Harness | Experiment 1 to Experiment 2</title>
+<meta name="description" content="An interactive, evidence-backed walkthrough of the Race Engineer Adaptive Harness's first two experiments.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d161e'/%3E%3Cpath d='M8 10h16v5H13v7h11M8 22V10' fill='none' stroke='%23c4f86b' stroke-width='3'/%3E%3C/svg%3E">
+<style>/* SITE_CSS */</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to presentation</a>
+<header class="topbar">
+ <a href="#story" class="brand" aria-label="Inside the Harness home"><span class="brand-mark">R<span>H</span></span><span>INSIDE THE HARNESS<small>Race Engineer Adaptive Harness</small></span></a>
+ <nav aria-label="Main views" class="topnav"><button class="active" data-view="story">Walkthrough</button><button data-view="results">Results</button><button data-view="database">MongoDB</button><button data-view="sources">Evidence</button></nav>
+ <button id="fullscreen" class="quiet">Present <span aria-hidden="true">↗</span></button>
+</header>
+<main id="main">
+ <section id="story-view">
+  <div class="intro"><div><p class="eyebrow">A RECORDED EXPERIMENT · SEPTEMBER 26, 2026</p><h1>One defect. Two experiments.<br><span>A memory of what failed.</span></h1></div><div class="intro-side"><strong>01 <span>→</span> 02</strong><p>Follow a race audit from the agents’ work<br>to the next trial.</p></div></div>
+  <div class="story-shell">
+   <aside class="chapter-nav" aria-label="Walkthrough chapters"><p class="eyebrow">THE REPLAY</p><div id="chapters"></div><div class="replay-note"><span class="tiny-label">EVIDENCE MODE</span><p>Recorded reports + explained workflow</p><button class="text-link" data-action="coverage">What is included ↗</button></div></aside>
+   <div class="story-workspace">
+    <div class="scene-top"><p id="scene-kicker" class="eyebrow"></p><span id="scene-counter" class="mono"></span></div>
+    <h2 id="scene-title"></h2><p class="scene-description" id="scene-description"></p>
+    <div id="scene-visual" class="scene-visual"></div>
+    <div class="takeaway"><span>THE POINT</span><p id="scene-takeaway"></p></div>
+    <div class="scene-footer"><button id="prev" class="quiet">← Back</button><div class="play-tools"><button id="play" class="quiet">Play story</button><span class="keyboard-hint">← → to step</span></div><button id="next" class="primary">Next chapter →</button></div>
+   </div>
+  </div>
+  <div class="under-story"><p><span class="dot"></span> Actual results and improvement-agent excerpts. Workflow summaries are labeled.</p><button class="text-link" data-view="results">Compare all 36 runs ↗</button></div>
+ </section>
+ <section id="results-view" hidden class="secondary-view"></section>
+ <section id="database-view" hidden class="secondary-view"></section>
+ <section id="sources-view" hidden class="secondary-view"></section>
+</main>
+<footer class="page-footer"><span>RECURSIVE HARNESSING / MONGODB NYC HACKATHON</span><span>Report snapshot <code id="commit-id"></code> · Works offline</span></footer>
+<dialog id="drawer" aria-labelledby="drawer-title"><div class="drawer-head"><div><p id="drawer-kicker" class="eyebrow">SOURCE RECORD</p><h2 id="drawer-title"></h2></div><button id="close-drawer" class="quiet" aria-label="Close evidence">Close ×</button></div><div id="drawer-content"></div></dialog>
+<div id="announcement" class="sr-only" aria-live="polite"></div>
+<script>const DATA = /* EVIDENCE_DATA */;</script>
+<script>/* SITE_JS */</script>
+</body></html>

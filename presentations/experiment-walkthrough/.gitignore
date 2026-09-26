@@ -1,0 +1,5 @@
+# Local MongoDB exports and generated files do not belong in source control.
+*.json
+*.zip
+.env
+__pycache__/
