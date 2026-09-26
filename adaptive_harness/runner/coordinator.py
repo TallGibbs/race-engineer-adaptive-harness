@@ -342,6 +342,9 @@ class _CaseRun:
             if cfg.min_races_for_rate.enabled:
                 results.append(("min_races_for_rate", *checks.min_races_for_rate(
                     brief, self.task.type, cfg.min_races_for_rate.value), refs))
+            if cfg.row_evidence is not None and cfg.row_evidence.enabled:
+                results.append(("row_evidence", *checks.row_evidence(
+                    brief, self.task.type, dict(zip(tr_ids, contents))), refs + tr_ids))
         check_ids = []
         reasons: list[str] = []
         for name, passed, why, crefs in results:

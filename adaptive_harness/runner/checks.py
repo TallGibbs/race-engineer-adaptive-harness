@@ -213,3 +213,31 @@ def min_races_for_rate(brief: Mapping[str, Any], case_type: str, value: int) -> 
     if n < value and any(rates.get(k) is not None for k in ("sc", "vsc", "any")):
         return False, [f"rates reported on {n} races, fewer than the minimum {value}"]
     return True, []
+
+
+# Tools whose results are computed statistics, not records about a race.
+COMPUTED_TOOLS = ("interval",)
+
+
+def row_evidence(brief: Mapping[str, Any], case_type: str, tool_results: Mapping[str, Mapping[str, Any]]) -> Result:
+    """Every race row cites at least one recorded tool_result of this run whose arguments
+    match that race's year and round. `tool_results` maps this run's tool_result event ids
+    to their contents; a cited id that is not in it (another run's event, or not a
+    tool_result) does not count, and neither does a computed statistic."""
+    reasons = []
+    for r in _races(brief, case_type):
+        year, rnd = _as_int(r.get("year")), _as_int(r.get("round"))
+        cited = brief.get("evidence") if case_type == "race_audit" else r.get("evidence")
+        ok = False
+        for ev in cited or []:
+            tr = tool_results.get(ev) if isinstance(ev, str) else None
+            if not tr or tr.get("tool") in COMPUTED_TOOLS:
+                continue
+            args = tr.get("args") or {}
+            if year is not None and rnd is not None and (
+                    _as_int(_first(args, _YEAR_KEYS)), _as_int(_first(args, _ROUND_KEYS))) == (year, rnd):
+                ok = True
+                break
+        if not ok:
+            reasons.append(f"race {year} round {rnd} cites no recorded tool_result of this run for that race")
+    return not reasons, reasons

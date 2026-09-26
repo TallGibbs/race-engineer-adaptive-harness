@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any, Literal, Mapping
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_serializer, model_validator
 
 from .common import ROLES, Role, Strict, TaskRole, canonical_sha256
 
@@ -180,6 +180,16 @@ class Checks(Strict):
     venue_match: ToggleCheck
     source_agreement: SourceAgreementCheck
     min_races_for_rate: MinRacesCheck
+    # Added to the catalog after v1. Optional and absent-means-off; omitted from the
+    # serialization when absent so configurations stored before it keep their hashes.
+    row_evidence: ToggleCheck | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_absent(self, handler: Any) -> dict[str, Any]:
+        data = handler(self)
+        if self.row_evidence is None:
+            data.pop("row_evidence", None)
+        return data
 
 
 # ---------------------------------------------------------------- the configuration
@@ -257,6 +267,15 @@ EDITABLE_PATHS: dict[str, str] = {
     "/checks/venue_match": "measurement",
     "/checks/source_agreement": "measurement",
     "/checks/min_races_for_rate": "measurement",
+    "/checks/row_evidence": "measurement",
+}
+
+# Section B: the bounds of each editable check, as stated to the improvement agent.
+CHECK_BOUNDS: dict[str, str] = {
+    "/checks/venue_match": "enabled true or false",
+    "/checks/source_agreement": "enabled; tolerance_laps 0, 1, or 2",
+    "/checks/min_races_for_rate": "enabled; value 1 to 10",
+    "/checks/row_evidence": "enabled true or false; absent means off (add it to enable)",
 }
 
 

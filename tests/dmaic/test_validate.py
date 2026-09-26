@@ -136,3 +136,18 @@ def test_apply_patch_operations():
         apply_patch(doc, [{"op": "replace", "path": "/b/zz", "value": 1}])
     with pytest.raises(PatchError):
         apply_patch(doc, [{"op": "test", "path": "/b/c", "value": 2}])
+
+
+def test_row_evidence_can_be_added_on_the_measurement_surface():
+    config, _, reasons = check(proposal(change("add", "/checks/row_evidence", {"enabled": True}, lesson="L-measure")))
+    assert reasons == []
+    assert config["checks"]["row_evidence"] == {"enabled": True}
+    config, _, reasons = check(proposal(change("add", "/checks/row_evidence", {"enabled": True}, lesson="L-material")))
+    assert config is None and any("measurement surface" in r for r in reasons)
+
+
+def test_bounds_list_every_editable_check():
+    from adaptive_harness.contracts import CHECK_BOUNDS
+    from adaptive_harness.dmaic.prompts import BOUNDS
+    for path in CHECK_BOUNDS:
+        assert f"- {path} (" in BOUNDS

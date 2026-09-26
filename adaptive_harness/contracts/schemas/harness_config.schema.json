@@ -33,6 +33,17 @@
         "min_races_for_rate": {
           "$ref": "#/$defs/MinRacesCheck"
         },
+        "row_evidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToggleCheck"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "schema": {
           "$ref": "#/$defs/SchemaCheck"
         },

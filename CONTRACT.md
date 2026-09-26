@@ -32,7 +32,7 @@ evaluator it cannot edit.
   `DATA_DIR`.
 - `HarnessConfig.config_hash()`: canonical SHA-256 of the whole configuration.
 - `resolve_model(model_block, env)`, `stage_order_problems(stages, optional_catalog)`,
-  `surface_of(path)`, `EDITABLE_PATHS`, `event_id(run_id, seq)`.
+  `surface_of(path)`, `EDITABLE_PATHS`, `CHECK_BOUNDS`, `event_id(run_id, seq)`.
 - Tasks: `examples.neutralization_brief.task.load_tasks(sets=None, only_default=False)`
   and `load_task(case_id)` return `Task {id, set, type, target {year, round}, as_of,
   question}` from `data/cases.json` only.
@@ -84,6 +84,12 @@ evaluator it cannot edit.
   `schema {enabled: true, editable: false}`; `venue_match {enabled: false}`;
   `source_agreement {enabled: false, tolerance_laps: 1}`;
   `min_races_for_rate {enabled: false, value: 1}`.
+  `row_evidence` (added to the catalog after v1, operator decision, see section B) is
+  optional: absent means off, and it is omitted from the canonical serialization when
+  absent, so every configuration stored before it keeps its hash. When enabled, S7
+  checks that every race row cites at least one recorded tool_result of the same run
+  whose arguments match that race (year and round); computed statistics (`interval`)
+  do not count as race evidence.
 - `change_cap` 3.
 
 ## B. Editable paths and bounds
@@ -98,6 +104,17 @@ maps a path to its surface (cause category) or None when fixed.
 | `/checks/venue_match` | measurement | enabled true or false |
 | `/checks/source_agreement` | measurement | enabled; `tolerance_laps` 0, 1, or 2 |
 | `/checks/min_races_for_rate` | measurement | enabled; `value` 1 to 10 |
+| `/checks/row_evidence` | measurement | enabled true or false; absent means off (a JSON Patch `add` enables it) |
+
+Operator decision (2026-09-26): the analyze phase, in two separate cycles, produced the
+same verified lesson: before any GO, an in-harness check should confirm that every race
+row in the brief cites at least one recorded tool_result from the same run whose
+arguments match that race (year and round); computed statistics such as interval results
+must not count as race evidence, and any row that fails should be sent back for repair or
+set to HOLD. No check in the editable catalog did this, so the operator added
+`row_evidence` to the catalog, off by default. The harness, not the operator, decides
+whether to enable it, through the normal improve phase and acceptance rules. The
+improvement agent's bounds text for `/checks` is generated from `CHECK_BOUNDS`.
 
 Everything else is fixed: `model` (the default and every role), `budgets`, both stage
 catalogs, `change_cap`, `/checks/schema`, tools, charters, the evaluator, the cases, and

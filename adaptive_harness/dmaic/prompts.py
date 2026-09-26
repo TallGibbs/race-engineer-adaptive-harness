@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping, Sequence
 
+from ..contracts.config import CHECK_BOUNDS
 from ..contracts.rules import CycleConfig
 
 TASK_DESCRIPTION = (
@@ -130,16 +131,20 @@ def root_cause(
 # ---------------------------------------------------------------- improve
 
 
-BOUNDS = """Editable paths (RFC 6902 JSON Patch operations on the configuration) and their bounds:
+# The /checks lines come from the contract's catalog of editable checks.
+_CHECK_LINES = "\n".join(
+    f"- {path} ({'surface of measurement causes' if i == 0 else 'measurement'}): {bounds}."
+    for i, (path, bounds) in enumerate(CHECK_BOUNDS.items())
+)
+
+BOUNDS = f"""Editable paths (RFC 6902 JSON Patch operations on the configuration) and their bounds:
 - /stages (surface of method causes): reorder, or insert the optional stages X1 to X3 at their
   allowed positions (see optional_stage_catalog: "before" and "after"). S1 to S7 may not be
   removed; S4 stays before S5; S6 then S7 stay last.
 - /context_policy/... (surface of material causes): context items from the catalog only (task,
   output_schema, tool_docs, lessons, open_objections, prior:<stage id>); lessons.k 0 to 5;
   lessons.filters limited to status and scope.
-- /checks/venue_match (surface of measurement causes): enabled true or false.
-- /checks/source_agreement (measurement): enabled; tolerance_laps 0, 1, or 2.
-- /checks/min_races_for_rate (measurement): enabled; value 1 to 10.
+{_CHECK_LINES}
 Everything else is fixed: model, budgets, both stage catalogs, change_cap, /checks/schema,
 tools, role charters, the evaluator, the cases, and the answer key."""
 
