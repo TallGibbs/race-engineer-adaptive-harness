@@ -119,6 +119,8 @@ def load(store: Store, experiment_id: str) -> ExperimentData:
     version_ids = {v for a in arms.values() for v in a.versions}
     if exp.get("candidate_version"):
         version_ids.add(exp["candidate_version"])
+    improve = ((exp.get("dmaic") or {}).get("improve") or {}).get("artifact") or {}
+    version_ids.update(h for h in improve.get("history") or [] if isinstance(h, str))
     versions: dict[str, dict[str, Any]] = {}
     for vid in list(version_ids):
         v = store.get("harness_versions", vid)

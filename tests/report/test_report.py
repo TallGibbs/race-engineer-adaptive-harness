@@ -221,3 +221,33 @@ def test_dispatcher_routes_report_and_maps():
     import adaptive_harness.__main__ as entry
 
     assert entry._handler("report") is cli.report and entry._handler("maps") is cli.maps
+
+
+def test_improve_shows_proposal_history(store):
+    store.insert("harness_versions", {**version("v0x", "v1", load_config().to_dict(), "rejected", False),
+                                      "changes": [{"op": {"op": "replace", "path": "/checks/venue_match/enabled",
+                                                          "value": True}, "lesson_id": "L0", "why": "w"}],
+                                      "decision_reasons": ["R2 improvement: worst 11, best 11"]})
+    exp = store.get("experiments", "x1")
+    exp["dmaic"]["improve"]["artifact"]["history"] = ["v0x"]
+    store.update("experiments", "x1", {"dmaic": exp["dmaic"]})
+    text = markdown.render(load(store, "x1"))
+    assert "### Proposal history shown to the improvement agent" in text
+    assert "| v0x | rejected | replace `/checks/venue_match/enabled` = true | R2 improvement: worst 11, best 11 |" in text
+
+
+def test_maps_export_folder_follows_output_name(store, tmp_path, monkeypatch):
+    store.close = lambda: None
+    monkeypatch.setattr(cli, "open_store", lambda: store)
+    monkeypatch.setattr(cli, "mermaid_cli", lambda: ["mmdc"])
+    seen = []
+
+    def fake_render(src, outputs, cli_=None, timeout=0):
+        seen.extend(outputs)
+        return True, "ok"
+
+    monkeypatch.setattr(cli, "render_mermaid", fake_render)
+    out = tmp_path / "maps_x1.md"
+    assert cli.maps(["--versions", "v1,v2", "--experiment", "x1", "--out", str(out)]) == 0
+    assert {p.parent.name for p in seen} == {"maps_x1"}
+    assert "(maps_x1/v1_process.svg)" in out.read_text(encoding="utf-8")

@@ -279,6 +279,20 @@ def improve_section(d: ExperimentData) -> str:
         return "\n".join(out)
     prop = art.get("proposal") or {}
     val = art.get("validation") or {}
+    history = [h for h in art.get("history") or [] if isinstance(h, str)]
+    if "history" in art:
+        out += ["### Proposal history shown to the improvement agent", ""]
+        if history:
+            out.append(table(["version", "status", "changes", "decision reasons"],
+                             [(vid, (d.versions.get(vid) or {}).get("status"),
+                               "; ".join(f"{c['op']['op']} `{c['op']['path']}` = {json.dumps(c['op'].get('value'))}"
+                                         for c in (d.versions.get(vid) or {}).get("changes", [])),
+                               "; ".join((d.versions.get(vid) or {}).get("decision_reasons", [])))
+                              for vid in history]))
+            out += ["", "The agent sees each earlier change set with its development-case outcome only; the "
+                    "validator refuses an exact repeat of a rejected change set.", ""]
+        else:
+            out += ["None: no earlier proposal existed.", ""]
     out += ["### Proposal", "", f"Candidate {art.get('candidate_version')} from {art.get('from')}, "
             f"lesson retrieval: {art.get('retrieval')}.", ""]
     out.append(table(["op", "path", "value", "cites root cause", "why"],

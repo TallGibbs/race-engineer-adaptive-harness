@@ -9,7 +9,8 @@ experiment. Operator notes, when present, are read from reports/<E>.notes.json
 
 `maps` writes Mermaid diagrams generated from the stored configurations and records.
 When Mermaid CLI is reachable through `npx` (npx -y @mermaid-js/mermaid-cli), each
-diagram is also exported as SVG and PNG into reports/maps/.
+diagram is also exported as SVG and PNG into a folder named after the output file
+(reports/maps.md -> reports/maps/).
 
 `show` is not defined here yet; the dispatcher falls back to the store lane's
 `show run <id>`.
@@ -226,12 +227,12 @@ def maps(argv: list[str]) -> int:
         if cli is None:
             print("maps: Mermaid CLI not available (npx not on PATH); SVG and PNG not exported", file=sys.stderr)
         else:
-            export_dir = out.parent / "maps"
+            export_dir = out.parent / out.stem  # reports/maps.md -> reports/maps/
             for name, _, src in diagrams:
                 files = [export_dir / f"{name}.svg", export_dir / f"{name}.png"]
                 ok, msg = render_mermaid(src, files, cli)
                 if ok:
-                    exported[name] = [f"maps/{f.name}" for f in files]
+                    exported[name] = [f"{out.stem}/{f.name}" for f in files]
                     print(f"maps: exported {', '.join(_rel(f) for f in files)}")
                 else:
                     print(f"maps: export of {name} failed: {msg}", file=sys.stderr)
