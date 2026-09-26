@@ -22,6 +22,9 @@ def open_store() -> Any:
         lane = importlib.import_module("adaptive_harness.store")
     except ImportError:
         lane = None
+    from_env = getattr(getattr(lane, "MongoStore", None), "from_env", None)
+    if callable(from_env):
+        return from_env()
     for name in _FACTORIES:
         factory = getattr(lane, name, None)
         if callable(factory):
