@@ -152,8 +152,11 @@ compared.
 - [exp2](reports/exp2.md): rejected; the cycle stopped at improve on R2 (candidate v3,
   enabling `source_agreement`, proposed after seeing v2's outcome, passed 11 development
   checks, the same as v1). v1 stays pinned.
+- [exp3](reports/exp3.md): rejected; the cycle stopped at improve on R1 and R2 (candidate
+  v4, enabling the operator-added `row_evidence` check, passed 11 development checks,
+  the same as v1, and lost E2 and E3 on control case P1). v1 stays pinned.
 
-Maps: [exp1](reports/maps.md), [exp2](reports/maps_exp2.md).
+Maps: [exp1](reports/maps.md), [exp2](reports/maps_exp2.md), [exp3](reports/maps_exp3.md).
 
 ## How to run
 
