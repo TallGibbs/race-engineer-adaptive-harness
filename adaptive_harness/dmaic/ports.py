@@ -13,7 +13,6 @@ Tests replace all three with fakes (tests/dmaic/fakes.py).
 
 from __future__ import annotations
 
-import importlib
 import json
 import subprocess
 import sys
@@ -121,13 +120,14 @@ class RunnerPort(Protocol):
 class CliRunner:
     """The runner lane as its own process:
 
-        python -m adaptive_harness run --experiment E --arm A --version V --snapshot S --case C [--case C ...]
+        python -m adaptive_harness run --config V --snapshot S --cases C1,C2 --arm A --experiment E
 
-    The new run ids are the runs of (experiment, arm) that did not exist before the call.
+    `--config` takes the version id. The runner prints one line per run,
+    "<run_id>	<case_id>	<status>", and exits 1 when a run ended HARNESS (the phases
+    rerun those cases), so exit codes 0 and 1 both return the parsed run ids.
     """
 
-    def __init__(self, store: Store, python: str | None = None, cwd: str | None = None, timeout: float = 7200.0) -> None:
-        self.store = store
+    def __init__(self, python: str | None = None, cwd: str | None = None, timeout: float = 7200.0) -> None:
         self.python = python or sys.executable
         self.cwd = cwd or str(REPO_ROOT)
         self.timeout = timeout
@@ -143,11 +143,8 @@ class CliRunner:
     ) -> list[str]:
         if not case_ids:
             return []
-        flt = {"experiment_id": experiment_id, "arm": arm}
-        before = {r["_id"] for r in self.store.find("runs", flt)}
-        args = ["--experiment", experiment_id, "--arm", arm, "--version", version_id, "--snapshot", snapshot]
-        for c in case_ids:
-            args += ["--case", c]
+        args = ["--config", version_id, "--snapshot", snapshot, "--cases", ",".join(case_ids),
+                "--arm", arm, "--experiment", experiment_id]
         proc = subprocess.run(
             [self.python, "-m", "adaptive_harness", "run", *args],
             cwd=self.cwd,
@@ -156,44 +153,35 @@ class CliRunner:
             encoding="utf-8",
             timeout=self.timeout,
         )
-        if proc.returncode != 0:
+        runs = parse_run_lines(proc.stdout)
+        if proc.returncode not in (0, 1) or (proc.returncode == 1 and not runs):
             raise PortError(f"runner exited {proc.returncode}: {proc.stderr.strip()}")
-        new = [r for r in self.store.find("runs", flt, sort=[("started_at", 1)]) if r["_id"] not in before]
         order = {c: i for i, c in enumerate(case_ids)}
-        new.sort(key=lambda r: order.get(r["case_id"], len(order)))
-        return [r["_id"] for r in new]
+        runs.sort(key=lambda t: order.get(t[1], len(order)))
+        return [run_id for run_id, _, _ in runs]
+
+
+def parse_run_lines(stdout: str) -> list[tuple[str, str, str]]:
+    """(run_id, case_id, status) from the runner's "<run_id>	<case_id>	<status>" lines;
+    the header lines (harness and model assignment) have no tabs and are skipped."""
+    out = []
+    for line in stdout.splitlines():
+        parts = line.strip().split("	")
+        if len(parts) == 3 and all(parts):
+            out.append((parts[0], parts[1], parts[2]))
+    return out
 
 
 # ---------------------------------------------------------------- model client
 
-# Names the runner lane may expose for building its model client, tried in order.
-_CLIENT_FACTORIES = ("build_model_client", "make_model_client", "model_client_from_env", "create_model_client")
-
-
 def default_model_client() -> ModelClient:
-    """The runner lane's model client (section F), built from the pinned configuration."""
-    try:
-        runner = importlib.import_module("adaptive_harness.runner")
-    except ImportError as e:  # pragma: no cover - depends on the runner lane
-        raise PortError(f"the runner lane's model client is not available: {e}") from None
-    config = load_config()
-    for name in _CLIENT_FACTORIES:
-        factory = getattr(runner, name, None)
-        if callable(factory):
-            try:
-                return factory(config)
-            except TypeError:
-                return factory()
-    cls = getattr(runner, "ModelClient", None)
-    if cls is not None:
-        from_env = getattr(cls, "from_env", None)
-        if callable(from_env):
-            return from_env(config)
-        return cls(config)
-    raise PortError(
-        "the runner lane exposes no model client factory "
-        f"(looked for {', '.join(_CLIENT_FACTORIES)} or ModelClient in adaptive_harness.runner)"
-    )
+    """The runner lane's model client (section F). The model block is fixed across
+    versions, so configs/v1.json resolves it; the client maps the improvement_agent role
+    to its model itself."""
+    from ..contracts.config import resolve_model
+    from ..runner.models import build_client
+
+    return build_client(resolve_model(load_config().model))
 
 
 # ---------------------------------------------------------------- dependencies
@@ -258,4 +246,4 @@ def deps_from_env(log: Callable[[str], None] = print) -> Deps:
 
     load_dotenv()
     store = MongoStore.from_env()
-    return Deps(store=store, evaluator=SubprocessEvaluator(), runner=CliRunner(store), log=log)
+    return Deps(store=store, evaluator=SubprocessEvaluator(), runner=CliRunner(), log=log)

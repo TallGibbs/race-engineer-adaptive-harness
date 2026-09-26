@@ -238,8 +238,8 @@ def test_cli_phase_commands(monkeypatch, capsys):
     w = World(make_outcome(), script=[PROBLEM])
     w.baseline()
     monkeypatch.setattr(cli, "build_deps", lambda: w.deps)
-    # through the project dispatcher (options after "--") and the lane's own entry point
-    assert entry.main(["define", "--", "--experiment", "exp1"]) == 0
+    # through the project dispatcher and the lane's own entry point
+    assert entry.main(["define", "--experiment", "exp1"]) == 0
     out = json.loads(capsys.readouterr().out)
     assert out["phase"] == "define" and out["passed"] is True
     assert cli.main(["analyze", "--experiment", "exp1", "--snapshot", "M1"]) == 1  # measure has not passed

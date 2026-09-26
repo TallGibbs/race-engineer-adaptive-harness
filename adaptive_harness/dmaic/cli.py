@@ -11,9 +11,7 @@
 Each prints the phase result as JSON. A tollgate that does not pass is a recorded
 outcome (exit 0); a missing precondition or a failed external step exits 1.
 
-The same commands run as `python -m adaptive_harness.dmaic <command> [args]`. Through
-`python -m adaptive_harness`, put `--` before the options (`define -- --experiment E`):
-its dispatcher does not pass options that directly follow the command name.
+The same commands also run as `python -m adaptive_harness.dmaic <command> [args]`.
 """
 
 from __future__ import annotations
@@ -31,16 +29,8 @@ from .ports import Deps, PortError, deps_from_env
 build_deps: Callable[[], Deps] = lambda: deps_from_env(log=lambda msg: print(msg, file=sys.stderr))
 
 
-class _Parser(argparse.ArgumentParser):
-    def parse_args(self, args=None, namespace=None):  # type: ignore[override]
-        args = list(args or [])
-        if args[:1] == ["--"]:
-            args = args[1:]
-        return super().parse_args(args, namespace)
-
-
 def _parser(command: str, description: str) -> argparse.ArgumentParser:
-    p = _Parser(prog=f"python -m adaptive_harness {command}", description=description)
+    p = argparse.ArgumentParser(prog=f"python -m adaptive_harness {command}", description=description)
     p.add_argument("--experiment", required=True, metavar="EXPERIMENT_ID")
     return p
 
