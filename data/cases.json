@@ -1,0 +1,80 @@
+{
+  "as_of": "2026-09-25",
+  "task_family": "neutralization_brief",
+  "questions": {
+    "venue_brief": "As of the as-of date, how often have Grand Prix races at the venue of the target event been neutralized by a safety car or a virtual safety car? Count every Grand Prix race held at that venue from 2018 up to the as-of date, including the target event if it has already been held.",
+    "race_audit": "For the target Grand Prix race, was a safety car deployed, was a virtual safety car deployed, and was the race red-flagged?"
+  },
+  "cases": [
+    {
+      "id": "D1",
+      "set": "development",
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 16
+      },
+      "default": true
+    },
+    {
+      "id": "H1",
+      "set": "held_out",
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 14
+      },
+      "default": true
+    },
+    {
+      "id": "P1",
+      "set": "control",
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 18
+      },
+      "default": true
+    },
+    {
+      "id": "D2",
+      "set": "development",
+      "type": "race_audit",
+      "target": {
+        "year": 2025,
+        "round": 13
+      },
+      "default": false
+    },
+    {
+      "id": "H2",
+      "set": "held_out",
+      "type": "race_audit",
+      "target": {
+        "year": 2026,
+        "round": 13
+      },
+      "default": false
+    },
+    {
+      "id": "H3",
+      "set": "held_out",
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 19
+      },
+      "default": false
+    },
+    {
+      "id": "P2",
+      "set": "control",
+      "type": "race_audit",
+      "target": {
+        "year": 2026,
+        "round": 11
+      },
+      "default": false
+    }
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "key_version": 1,
+  "as_of": "2026-09-25",
+  "fastf1_version": "3.8.3",
+  "cases": {
+    "D1": {
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 16
+      },
+      "venue_location": "Kuala Lumpur",
+      "races": [],
+      "counts": {
+        "n_races": 0,
+        "n_sc": 0,
+        "n_vsc": 0,
+        "n_any": 0
+      },
+      "disposition": "HOLD",
+      "thin_sample": true
+    },
+    "H1": {
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 14
+      },
+      "venue_location": "Madrid",
+      "races": [
+        {
+          "year": 2026,
+          "round": 14,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        }
+      ],
+      "counts": {
+        "n_races": 1,
+        "n_sc": 0,
+        "n_vsc": 1,
+        "n_any": 1
+      },
+      "disposition": "GO",
+      "thin_sample": true
+    },
+    "P1": {
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 18
+      },
+      "venue_location": "Austin",
+      "races": [
+        {
+          "year": 2018,
+          "round": 18,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        },
+        {
+          "year": 2019,
+          "round": 19,
+          "sc": false,
+          "vsc": false,
+          "red_flag": false
+        },
+        {
+          "year": 2021,
+          "round": 17,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        },
+        {
+          "year": 2022,
+          "round": 19,
+          "sc": true,
+          "vsc": false,
+          "red_flag": false
+        },
+        {
+          "year": 2023,
+          "round": 18,
+          "sc": false,
+          "vsc": false,
+          "red_flag": false
+        },
+        {
+          "year": 2024,
+          "round": 19,
+          "sc": true,
+          "vsc": false,
+          "red_flag": false
+        },
+        {
+          "year": 2025,
+          "round": 19,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        }
+      ],
+      "counts": {
+        "n_races": 7,
+        "n_sc": 2,
+        "n_vsc": 3,
+        "n_any": 5
+      },
+      "disposition": "GO",
+      "thin_sample": false
+    },
+    "D2": {
+      "type": "race_audit",
+      "target": {
+        "year": 2025,
+        "round": 13
+      },
+      "sc": true,
+      "vsc": false,
+      "red_flag": true
+    },
+    "H2": {
+      "type": "race_audit",
+      "target": {
+        "year": 2026,
+        "round": 13
+      },
+      "sc": true,
+      "vsc": true,
+      "red_flag": true
+    },
+    "H3": {
+      "type": "venue_brief",
+      "target": {
+        "year": 2026,
+        "round": 19
+      },
+      "venue_location": "Mexico City",
+      "races": [
+        {
+          "year": 2018,
+          "round": 19,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        },
+        {
+          "year": 2019,
+          "round": 18,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        },
+        {
+          "year": 2021,
+          "round": 18,
+          "sc": true,
+          "vsc": false,
+          "red_flag": false
+        },
+        {
+          "year": 2022,
+          "round": 20,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        },
+        {
+          "year": 2023,
+          "round": 19,
+          "sc": true,
+          "vsc": true,
+          "red_flag": true
+        },
+        {
+          "year": 2024,
+          "round": 20,
+          "sc": true,
+          "vsc": false,
+          "red_flag": false
+        },
+        {
+          "year": 2025,
+          "round": 20,
+          "sc": false,
+          "vsc": true,
+          "red_flag": false
+        }
+      ],
+      "counts": {
+        "n_races": 7,
+        "n_sc": 3,
+        "n_vsc": 5,
+        "n_any": 7
+      },
+      "disposition": "GO",
+      "thin_sample": false
+    },
+    "P2": {
+      "type": "race_audit",
+      "target": {
+        "year": 2026,
+        "round": 11
+      },
+      "sc": false,
+      "vsc": true,
+      "red_flag": false
+    }
+  }
+}
