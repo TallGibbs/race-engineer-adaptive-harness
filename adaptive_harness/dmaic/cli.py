@@ -10,6 +10,10 @@
 
 Each prints the phase result as JSON. A tollgate that does not pass is a recorded
 outcome (exit 0); a missing precondition or a failed external step exits 1.
+
+The same commands run as `python -m adaptive_harness.dmaic <command> [args]`. Through
+`python -m adaptive_harness`, put `--` before the options (`define -- --experiment E`):
+its dispatcher does not pass options that directly follow the command name.
 """
 
 from __future__ import annotations
@@ -27,10 +31,30 @@ from .ports import Deps, PortError, deps_from_env
 build_deps: Callable[[], Deps] = lambda: deps_from_env(log=lambda msg: print(msg, file=sys.stderr))
 
 
+class _Parser(argparse.ArgumentParser):
+    def parse_args(self, args=None, namespace=None):  # type: ignore[override]
+        args = list(args or [])
+        if args[:1] == ["--"]:
+            args = args[1:]
+        return super().parse_args(args, namespace)
+
+
 def _parser(command: str, description: str) -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog=f"python -m adaptive_harness {command}", description=description)
+    p = _Parser(prog=f"python -m adaptive_harness {command}", description=description)
     p.add_argument("--experiment", required=True, metavar="EXPERIMENT_ID")
     return p
+
+
+COMMANDS = ("define", "measure", "analyze", "improve", "control", "cycle")
+
+
+def main(argv: list[str] | None = None) -> int:
+    """`python -m adaptive_harness.dmaic <command> [args]`."""
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if not argv or argv[0] not in COMMANDS:
+        print(f"usage: python -m adaptive_harness.dmaic {{{','.join(COMMANDS)}}} [args]", file=sys.stderr)
+        return 2
+    return globals()[argv[0]](argv[1:])
 
 
 def _run(fn: Callable[[Deps], dict[str, Any]]) -> int:
