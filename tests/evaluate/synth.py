@@ -13,14 +13,14 @@ from typing import Any
 
 import pytest
 
-from adaptive_harness.contracts import canonical_sha256, event_id
+from adaptive_harness.contracts import CONFIGS_DIR, canonical_sha256, event_id, load_config
 from adaptive_harness.evaluate.core import Evaluator
 from adaptive_harness.evaluate.keyfile import load_key
 from adaptive_harness.testing import FakeStore
 
 T0 = datetime(2031, 1, 1, tzinfo=timezone.utc)
 ASSIGN = {"race_engineer": "m-a", "statistician": "m-a", "data_engineer": "m-a", "improvement_agent": "m-b"}
-BUDGETS = {"max_model_calls": 20, "max_tool_calls": 40, "max_wall_seconds": 600}
+BUDGETS = load_config(CONFIGS_DIR / "v1.json").budgets.model_dump()
 
 # Wilson 90 for 1 of 3 (computed by hand: centre 0.4124, half-width 0.3341).
 R_1_OF_3 = {"value": 0.333, "interval": [0.078, 0.746], "method": "wilson_90"}
