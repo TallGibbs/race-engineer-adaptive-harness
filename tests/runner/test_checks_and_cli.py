@@ -163,7 +163,7 @@ def test_cli_run_prints_assignment_and_run_ids(monkeypatch, capsys, tmp_path):
         return m
 
     monkeypatch.setattr("adaptive_harness.runner.models.build_client", fake_build)
-    code = main(["run", "--", "--config", "configs/v1.json", "--snapshot", "M0", "--cases", "P1",
+    code = main(["run", "--config", "configs/v1.json", "--snapshot", "M0", "--cases", "P1",
                  "--store", "memory", "--tools", "synthetic", "--dump", str(tmp_path)])
     out = capsys.readouterr().out
     assert code == 0

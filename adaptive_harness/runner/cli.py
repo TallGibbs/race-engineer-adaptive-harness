@@ -4,9 +4,6 @@
         [--arm baseline] [--experiment ID] [--store mongo|memory] [--tools real|synthetic]
 
 --config takes a file path, a version id from the store (v1, v2), or "pinned".
-The shared dispatcher (adaptive_harness/__main__.py) currently rejects a flag as the
-first argument after the subcommand, so until it is fixed pass `--` first:
-`python -m adaptive_harness run -- --config ...`. Direct calls to run(argv) accept both.
 
 Cases run concurrently, at most three at once. Prints the resolved role-to-model
 assignment at startup, then one line per run: run id, case, status.
