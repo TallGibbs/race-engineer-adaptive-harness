@@ -1,0 +1,3 @@
+{
+  "define": "Operator decision: exp1's baseline covers six cases, the three default cases (D1, H1, P1) and the three optional race-audit cases (D2, H2, P2). All six were published in data/cases.json before any harness code. The optional cases were included because the only default development case, D1, has zero races at its venue and so cannot exhibit citation defects. The optional cases were fixed in advance and were used, not added. Every pilot arm covers the same six cases."
+}
