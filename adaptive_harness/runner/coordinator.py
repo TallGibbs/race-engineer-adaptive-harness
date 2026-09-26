@@ -3,7 +3,8 @@
 Stages run in config order. Consecutive stages sharing a parallel_group run concurrently,
 and a multi-role stage (S3) gives each role one concurrent response; blindness comes from
 the context policy. Tool stages use the JSON action protocol with the coordinator
-executing tools. S7 is code: it validates the S6 output and runs the enabled checks.
+executing tools. S7 is code: it validates the S6 output and runs the enabled checks, with
+one repair round by the S6 role when a catalog check fails.
 Every model call, tool call, tool result, message, decision, check, and error is an event.
 """
 
@@ -114,6 +115,7 @@ class _CaseRun:
         self.builder = ContextBuilder(co.config, task, co.tools, co.store, snapshot, self.records, co.embedder)
         self.status: str | None = None
         self.output: dict[str, Any] | None = None
+        self.output_conv: Conversation | None = None
 
     # ------------------------------------------------------------ run
 
@@ -213,6 +215,7 @@ class _CaseRun:
                 msg_id = self.rec.emit("message", reply.output, stage_id=stage_id, role=role, refs=[call_id])
                 if stage_id == OUTPUT_STAGE:
                     self.output = reply.output
+                    self.output_conv = conv
                 return reply.output, msg_id
             self._call_tool(conv, reply, call_id, list(sdef.tools), record)
 
@@ -323,9 +326,30 @@ class _CaseRun:
     # ------------------------------------------------------------ S7
 
     def _validate(self) -> None:
-        brief = self.output
         s6 = self.records.get(OUTPUT_STAGE)
         refs = [ev for _, _, ev in s6.notes] if s6 else []
+        check_ids, reasons, catalog_failed = self._run_checks(self.output, refs)
+        if catalog_failed:
+            # One repair round: the S6 role gets the reasons and may revise the brief once.
+            revised = self._repair(reasons, check_ids)
+            if revised is not None:
+                brief, msg_id = revised
+                self.output = brief
+                ids, reasons, _ = self._run_checks(brief, [msg_id])
+                check_ids += [msg_id] + ids
+        if reasons:
+            self.status = "hold"
+            decision = {"status": "hold", "disposition": "HOLD", "reasons": reasons}
+        else:
+            brief = self.output
+            disposition = brief.get("disposition", "GO") if isinstance(brief, dict) else "GO"
+            self.status = "hold" if disposition == "HOLD" else "completed"
+            decision = {"status": self.status, "disposition": disposition, "reasons": []}
+        self.rec.emit("decision", decision, stage_id=VALIDATE_STAGE, refs=check_ids)
+
+    def _run_checks(self, brief: Any, refs: list[str]) -> tuple[list[str], list[str], bool]:
+        """Schema, then the enabled catalog checks. Returns the check event ids, the reasons,
+        and whether any catalog check (not the schema check) failed."""
         tool_results = self.rec.find(type="tool_result")
         tr_ids = [e["_id"] for e in tool_results]
         contents = [e["content"] for e in tool_results]
@@ -351,14 +375,25 @@ class _CaseRun:
             check_ids.append(self.rec.emit("check", {"check": name, "passed": passed, "reasons": why},
                                            stage_id=VALIDATE_STAGE, refs=crefs))
             reasons.extend(f"{name}: {w}" for w in why)
-        if reasons:
-            self.status = "hold"
-            decision = {"status": "hold", "disposition": "HOLD", "reasons": reasons}
-        else:
-            disposition = brief.get("disposition", "GO") if isinstance(brief, dict) else "GO"
-            self.status = "hold" if disposition == "HOLD" else "completed"
-            decision = {"status": self.status, "disposition": disposition, "reasons": []}
-        self.rec.emit("decision", decision, stage_id=VALIDATE_STAGE, refs=check_ids)
+        catalog_failed = any(not passed for name, passed, _, _ in results if name != "schema")
+        return check_ids, reasons, catalog_failed
+
+    def _repair(self, reasons: list[str], check_ids: list[str]) -> tuple[dict[str, Any], str] | None:
+        """Ask the S6 role once for a revised output; record it as a new S6 output event.
+        Counts against the run's budgets like any model call. None when no valid reply."""
+        conv = self.output_conv
+        if conv is None:
+            return None
+        conv.messages.append({"role": "user", "content": prompts.CHECK_REPAIR.format(
+            reasons="\n".join(f"- {r}" for r in reasons))})
+        conv.refs = conv.refs + check_ids
+        got = self._ask(conv, tool_stage=False)
+        if got is None or not isinstance(got[0], Finish):
+            return None
+        reply, call_id = got
+        msg_id = self.rec.emit("message", reply.output, stage_id=OUTPUT_STAGE, role=conv.role,
+                               refs=[call_id] + check_ids)
+        return reply.output, msg_id
 
 
 def _brief_errors(e: ValidationError) -> str:

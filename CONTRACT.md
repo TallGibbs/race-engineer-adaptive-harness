@@ -65,6 +65,15 @@ evaluator it cannot edit.
   | S6 | brief | race_engineer | | produces the output (section D) |
   | S7 | validate | (code) | | fixed, code only, `kind: "code"` |
 
+  S7 repair round (operator decision, see section B): when any enabled catalog check
+  (`venue_match`, `source_agreement`, `min_races_for_rate`, `row_evidence`) fails, the S6
+  role gets the check reasons as a user message and replies once with a revised output,
+  recorded as a new S6 message event with refs to the check events. S7 runs again on the
+  revised output, which becomes the run's output; if checks still fail, the run is HOLD
+  with the reasons. There is one round only, it counts against the run's budgets, and a
+  schema failure never triggers it, so a configuration with no catalog check enabled runs
+  S7 exactly as before.
+
   Consecutive stages sharing a `parallel_group` run in parallel; blindness comes from the
   context policy (neither sees `prior:` of the other).
 - `optional_stage_catalog` (fixed): X1 identity_check (data_engineer, tools list_events,
@@ -214,7 +223,8 @@ Every role reply is one JSON object (`parse_stage_reply`):
   role, and loops within budget.
 - other stages: `{"action": "finish", "output": {...}}`.
 - `output` is a `StageNote {summary, objections, data}` before S6 and the section D output
-  at S6. S7 is code: it validates the S6 output and runs the enabled checks.
+  at S6. S7 is code: it validates the S6 output and runs the enabled checks, with one
+  repair round when a catalog check fails (section A, S7 repair round).
 
 Run status: `completed` (GO output), `hold` (HOLD output), `budget_exceeded`,
 `harness_error` (any `MeasurementSystemFailure`: `FetchError`, `ModelUnavailable`,

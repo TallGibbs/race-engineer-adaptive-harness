@@ -57,6 +57,12 @@ TOOL_PROTOCOL = (
 
 REPAIR = "Reply with one valid JSON object only."
 
+CHECK_REPAIR = (
+    "The harness's validation checks failed on your output, for these reasons:\n{reasons}\n"
+    "Revise the output to address them and reply with the complete revised output as one "
+    "finish action. This is the only revision round."
+)
+
 
 @lru_cache(maxsize=None)
 def charter(role: str) -> str:

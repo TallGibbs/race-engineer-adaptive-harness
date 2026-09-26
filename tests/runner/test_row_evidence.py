@@ -83,7 +83,9 @@ def test_not_run_when_absent_or_off():
 
 
 def test_enabled_check_holds_a_brief_without_row_evidence():
-    run, events, *_ = run_case(cfg=config(checks__row_evidence={"enabled": True}))
+    scripts = standard_scripts()
+    scripts["race_engineer"].append(finish(BRIEF))  # the repair round returns the brief unchanged
+    run, events, *_ = run_case(scripts, cfg=config(checks__row_evidence={"enabled": True}))
     got = check_events(events)["row_evidence"]
     assert not got["passed"] and len(got["reasons"]) == 2
     decision = [e for e in events if e["type"] == "decision"][-1]["content"]
