@@ -71,6 +71,13 @@ Cases come in three sets: development, held-out, and control. Only development-c
 evidence enters the define and analyze phases or any prompt the improvement agent sees.
 Held-out and control results are used only by code, to verify and to control.
 
+`data/cases.json` defines three default cases (D1, H1, P1, venue briefs) and three
+optional race-audit cases (D2, H2, P2), all published before any harness code. The first
+experiment, exp1, uses all six. The optional cases were included because the only default
+development case, D1, has zero races at its venue and so cannot exhibit citation defects;
+they were fixed in advance and were used, not added. Every pilot arm covers the same six
+cases.
+
 - Define: code builds a charter from the baseline's development-case evaluations
   (defects, opportunities, defects per opportunity, scope, goal). The agent writes a
   problem statement. Tollgate: at least one development defect.
@@ -132,8 +139,9 @@ compared.
 
 - `reports/exp1.md`: the report for the first experiment, with the baseline, each
   phase's artifact and tollgate verdict, the acceptance results, and the decision.
-- `reports/maps.md`: Mermaid maps of the discussion and of the cycle, drawn from the
-  recorded runs.
+- `reports/maps.md`: Mermaid maps of the v1 process, the cycle as it ran, and v1
+  against v2, generated from the stored configurations and records, not drawn by hand;
+  SVG and PNG exports in `reports/maps/`.
 
 ## How to run
 
@@ -150,7 +158,16 @@ pytest
 
 Fill in `.env` from `.env.example`: `MONGODB_URI`, `MONGODB_DB`, `MODEL_PROVIDER`,
 `MODEL_NAME` and any per-role overrides, `MODEL_BASE_URL` if needed, `MODEL_API_KEY`,
-and `FASTF1_CACHE_DIR` (a folder outside the repository). Never commit `.env`.
+and `FASTF1_CACHE_DIR` (a folder outside the repository). Never commit `.env`. Every
+command below reads `.env` itself.
+
+Plain `pytest` uses the in-memory fakes and skips the tests that need a live MongoDB
+Atlas cluster or a FastF1 cache. To run those too, load `.env` into the test process
+(this needs python-dotenv's command-line extra, `pip install "python-dotenv[cli]"`):
+
+```bash
+python -m dotenv run -- pytest
+```
 
 Create the collections and indexes and register v1 as the pinned baseline:
 
@@ -158,10 +175,11 @@ Create the collections and indexes and register v1 as the pinned baseline:
 python -m adaptive_harness init-db
 ```
 
-Run the baseline arm (memory snapshot M0) on the cases, under an experiment id:
+Run the baseline arm (memory snapshot M0) on the six cases, under an experiment id.
+`--config` takes a file path, a stored version id (`v1`, `v2`), or `pinned`:
 
 ```bash
-python -m adaptive_harness run --config v1 --snapshot M0 --cases D1,H1,P1 --arm baseline --experiment exp1
+python -m adaptive_harness run --config configs/v1.json --snapshot M0 --arm baseline --experiment exp1 --cases D1,D2,H1,H2,P1,P2
 ```
 
 Score the runs with the evaluator, which runs as its own process:
@@ -188,34 +206,64 @@ python -m adaptive_harness analyze --experiment exp1 --snapshot M1
 python -m adaptive_harness improve --experiment exp1 --from v1 --snapshot M1
 ```
 
-Then run the pilot arms (the current version as `memory_only` and the candidate as
-`candidate`, both on M1, same cases) with `run`, and apply the acceptance rules:
+Then run the pilot arms fresh on memory snapshot M1 and the same six cases: the current
+version as `memory_only` and the candidate as `candidate`:
+
+```bash
+python -m adaptive_harness run --config v1 --snapshot M1 --arm memory_only --experiment exp1 --cases D1,D2,H1,H2,P1,P2
+```
+
+```bash
+python -m adaptive_harness run --config v2 --snapshot M1 --arm candidate --experiment exp1 --cases D1,D2,H1,H2,P1,P2
+```
+
+Score them and apply the acceptance rules (tollgate I):
+
+```bash
+python -m adaptive_harness.evaluate --experiment exp1
+```
 
 ```bash
 python -m adaptive_harness improve --verify --experiment exp1
 ```
 
+If tollgate I passes, pin the candidate and arm its control plan; `--confirm` also runs
+the confirmation arm (leave it out to arm the plan without one):
+
 ```bash
 python -m adaptive_harness control --experiment exp1 --confirm
 ```
 
-Or run all five phases, including the pilot, in one command:
+Or run all five phases, including the pilot on the experiment's cases, in one command.
+It stops at the first tollgate that does not pass (`--confirm` adds the confirmation arm,
+`--repeat` a repeat of the development cases in measure):
 
 ```bash
 python -m adaptive_harness cycle --experiment exp1
 ```
 
-Write the markdown report and the Mermaid maps:
+Write the markdown report (`reports/exp1.md`). Operator notes in
+`reports/exp1.notes.json` are placed in the matching section:
 
 ```bash
-python -m adaptive_harness report --help
+python -m adaptive_harness report --experiment exp1
 ```
+
+Write the Mermaid maps (`reports/maps.md`) for two versions and the experiment. When
+Node.js is installed, the maps are also exported as SVG and PNG into `reports/maps/`
+through `npx -y @mermaid-js/mermaid-cli`; `--no-export` skips that:
 
 ```bash
-python -m adaptive_harness maps --help
+python -m adaptive_harness maps --versions v1,v2 --experiment exp1
 ```
 
-`python -m adaptive_harness --help` lists every command. `show` prints a stored run.
+Print a stored run's events in order:
+
+```bash
+python -m adaptive_harness show run <run_id>
+```
+
+`python -m adaptive_harness --help` lists every command, and each command takes `--help`.
 
 ## Data
 
@@ -244,8 +292,8 @@ This project is unofficial and is not associated with the Formula 1 companies.
 
 ## Limits
 
-- A small fixed set of cases (see `data/cases.json`), one run per arm, and no
-  statistical claim.
+- Six fixed cases (two development, two held-out, two control; see
+  `data/cases.json`), one run per case per arm, and no statistical claim.
 - No sigma level or capability claim. The control plan uses specification thresholds
   instead of statistical control limits, which need about 20 runs.
 - A hackathon prototype, not a production system.
