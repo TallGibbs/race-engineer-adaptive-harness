@@ -10,6 +10,7 @@ from .common import (
     sha256_hex,
 )
 from .config import (
+    CHECK_BOUNDS,
     EDITABLE_PATHS,
     HarnessConfig,
     ModelBlock,

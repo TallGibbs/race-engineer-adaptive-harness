@@ -10,6 +10,7 @@ from .helpers import (
     AUDIT,
     BRIEF,
     call,
+    finish,
     config,
     fake_tools,
     note,
@@ -235,7 +236,9 @@ def test_hold_disposition_gives_hold_status():
 def test_enabled_checks_run_at_s7():
     cfg = config(checks__venue_match={"enabled": True},
                  checks__min_races_for_rate={"enabled": True, "value": 5})
-    run, events, *_ = run_case(cfg=cfg)
+    scripts = standard_scripts()
+    scripts["race_engineer"].append(finish(BRIEF))  # the repair round returns the brief unchanged
+    run, events, *_ = run_case(scripts, cfg=cfg)
     checks = {e["content"]["check"]: e["content"] for e in events if e["type"] == "check"}
     assert set(checks) == {"schema", "venue_match", "min_races_for_rate"}
     assert checks["venue_match"]["passed"]
