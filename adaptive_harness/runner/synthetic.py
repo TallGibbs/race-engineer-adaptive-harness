@@ -32,7 +32,7 @@ def _events(args: dict, as_of: date) -> ToolResult:
     if date(year, 1, 1) >= as_of:
         raise AsOfViolation(f"season {year} starts on or after the as-of date")
     rows = [
-        {"round": r, "event_name": f"Synthetic Grand Prix {r}", "location": f"Synthville {r % 7}",
+        {"round": r, "event_name": f"Synthetic Grand Prix {r}", "location": f"Synthville {r}",
          "date": _event_date(year, r).isoformat()}
         for r in range(1, ROUNDS_PER_YEAR + 1) if _event_date(year, r) < as_of
     ]
