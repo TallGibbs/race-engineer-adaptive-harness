@@ -8,7 +8,7 @@ from typing import Any
 
 from ..store.records import pinned_version
 from .analyze import analyze
-from .common import PhaseError
+from .common import PhaseError, sync_arms
 from .control import control
 from .define import define
 from .improve import pilot, propose, verify
@@ -27,6 +27,7 @@ def cycle(
     steps: list[dict[str, Any]] = []
 
     def done(stopped_at: str | None) -> dict[str, Any]:
+        sync_arms(deps, experiment_id)
         return {"experiment_id": experiment_id, "stopped_at": stopped_at, "steps": steps}
 
     steps.append(_brief(define(deps, experiment_id)))

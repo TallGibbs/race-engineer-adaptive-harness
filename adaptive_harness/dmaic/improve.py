@@ -1,7 +1,8 @@
 """Improve: proposal, pilot, and tollgate I.
 
 `propose` retrieves the verified controllable root causes (vector search, with the
-metadata fallback), asks the improvement agent for changes, validates them in code, and
+metadata fallback) and the history of earlier proposals (development-case outcomes only),
+asks the improvement agent for changes, validates them in code, and
 saves a valid proposal as candidate version vN (status candidate, not pinned) or records
 the rejection. `pilot` runs the current version (arm memory_only) and the candidate (arm
 candidate) fresh on the same memory snapshot and cases. `verify` scores the pilot and
@@ -38,7 +39,9 @@ from .common import (
     run_arm,
     runs_of,
     score_missing,
+    sync_arms,
 )
+from .history import proposal_history, refused_change_sets
 from .ports import Deps
 from .validate import validate_proposal
 
@@ -138,14 +141,17 @@ def propose(deps: Deps, experiment_id: str, from_version: str, snapshot: str) ->
     charter = {**(define_artifact.get("charter") or {}), "problem_statement": define_artifact.get("problem_statement")}
     views = [_root_cause_view(deps, h) for h in hits]
     cap = parent.config.get("change_cap", 0)
+    history = proposal_history(deps, parent_config.get("task_family"))
+    artifact["history"] = [h["version_id"] for h in history]
     system, user = prompts.proposal(
-        deps.cycle, [r.statement for r in deps.acceptance.rules], parent_config, charter, views, cap
+        deps.cycle, [r.statement for r in deps.acceptance.rules], parent_config, charter, views, cap, history
     )
     reply = ask_agent(deps, system, user, prompts.proposal_schema(cap))
     proposal = reply["parsed"]
     version_id = next_version_id(deps)
     config, changes, problems = validate_proposal(
-        proposal, parent_config, {h["_id"]: h for h in hits}, new_version_id=version_id
+        proposal, parent_config, {h["_id"]: h for h in hits}, new_version_id=version_id,
+        refused=refused_change_sets(history),
     )
     artifact.update(agent=reply["call"], proposal=proposal, validation={"valid": not problems, "reasons": problems})
 
@@ -206,6 +212,7 @@ def pilot(deps: Deps, experiment_id: str) -> dict[str, list[str]]:
 
 def verify(deps: Deps, experiment_id: str) -> dict[str, Any]:
     candidate = _candidate(deps, experiment_id)
+    sync_arms(deps, experiment_id)
     exp = load_experiment(deps, experiment_id)
     arms = [deps.acceptance.compare["current"].arm, deps.acceptance.compare["candidate"].arm]
     pilot_runs = {arm: runs_of(deps, experiment_id, arm) for arm in arms}

@@ -25,6 +25,7 @@ from .common import (
     load_experiment,
     passed_count,
     record_phase,
+    sync_arms,
     require_passed,
     run_arm,
     runs_of,
@@ -179,6 +180,7 @@ def confirm_plan(deps: Deps, experiment_id: str, version: HarnessVersion) -> tup
 
 
 def control(deps: Deps, experiment_id: str, confirm: bool = False) -> dict[str, Any]:
+    sync_arms(deps, experiment_id)
     exp = load_experiment(deps, experiment_id)
     require_passed(exp, "improve")
     if exp.decision != "accepted" or not exp.candidate_version:
@@ -210,6 +212,7 @@ def control(deps: Deps, experiment_id: str, confirm: bool = False) -> dict[str, 
     after = get_version(deps.store, version.id)
     artifact["control_plan"] = after.control_plan.model_dump() if after and after.control_plan else None
     artifact["pinned"] = bool(after and after.pinned)
+    sync_arms(deps, experiment_id)
     record_phase(deps, experiment_id, "control", artifact, passed, reasons, decision=None if passed else "stopped")
     return {"phase": "control", "passed": passed, "reasons": reasons, "artifact": artifact}
 

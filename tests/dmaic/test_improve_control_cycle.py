@@ -248,3 +248,36 @@ def test_cli_phase_commands(monkeypatch, capsys):
     with pytest.raises(SystemExit):
         cli.main(["improve", "--experiment", "exp1"])  # needs --from and --snapshot, or --verify
     assert cli.main(["nonsense"]) == 2
+
+
+# ---------------------------------------------------------------- arms list
+
+
+def test_arms_list_picks_up_runs_launched_outside_the_cycle():
+    """Pilot runs launched with the runner CLI never touch experiments.arms; verify and
+    control add every arm with stored runs, once each, in first-seen order."""
+    from adaptive_harness.dmaic.common import sync_arms
+
+    w = analyzed(make_outcome(), extra_script=[proposal()])
+    assert propose(w.deps, "exp1", "v1", "M1")["valid"]
+    # as the runner CLI would: runs stored, arms list untouched
+    w.runner.run_cases(experiment_id="exp1", arm="memory_only", version_id="v1", snapshot="M1", case_ids=w.case_ids)
+    w.runner.run_cases(experiment_id="exp1", arm="candidate", version_id="v2", snapshot="M1", case_ids=w.case_ids)
+    w.runner.run_cases(experiment_id="exp1", arm="memory_only", version_id="v1", snapshot="M1", case_ids=[DEV])
+    assert w.experiment()["arms"] == ["baseline"]
+
+    assert verify(w.deps, "exp1")["passed"]
+    assert w.experiment()["arms"] == ["baseline", "memory_only", "candidate"]
+    control(w.deps, "exp1")
+    assert w.experiment()["arms"] == ["baseline", "memory_only", "candidate"]
+    assert sync_arms(w.deps, "exp1") == ["baseline", "memory_only", "candidate"]  # idempotent
+
+
+def test_cycle_ends_with_every_run_arm_listed():
+    w = World(make_outcome(), script=[PROBLEM, root_cause(DEV_RUN, "method"), proposal()])
+    w.baseline()
+    w.store.update("experiments", "exp1", {"arms": []})
+    cycle(w.deps, "exp1")
+    arms = w.experiment()["arms"]
+    assert len(arms) == len(set(arms))
+    assert set(arms) == {r["arm"] for r in w.store.find("runs", {"experiment_id": "exp1"})}

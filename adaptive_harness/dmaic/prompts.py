@@ -187,9 +187,20 @@ def proposal(
     charter: Mapping[str, Any],
     root_causes: Sequence[Mapping[str, Any]],
     change_cap: int,
+    history: Sequence[Mapping[str, Any]] = (),
 ) -> tuple[str, str]:
     system = f"{ROLE_DESCRIPTION}\n\n{TASK_DESCRIPTION}"
     rules = "\n".join(f"- {s}" for s in acceptance_statements)
+    earlier = ""
+    if history:
+        earlier = (
+            "Earlier proposals for this task, oldest first: each version's changes (JSON Patch "
+            "operation and the lesson_id it cited), its status, and its outcome on the "
+            "development cases only:\n"
+            f"{_json(list(history))}\n\n"
+            "A proposal whose set of changes (in any order) equals that of an earlier rejected "
+            "or rolled_back version will be refused.\n\n"
+        )
     user = (
         "Phase: improve.\n\n"
         "Current configuration:\n"
@@ -203,6 +214,7 @@ def proposal(
         f"{_json(list(root_causes))}\n\n"
         "The candidate is accepted only if all of these hold when it is piloted:\n"
         f"{rules}\n\n"
+        f"{earlier}"
         f"Propose at most {change_cap} changes. Each change is one JSON Patch operation on an "
         "editable path, cites the lesson_id of the root cause it addresses, and that root "
         "cause's category must be the surface of the path. Return:\n"

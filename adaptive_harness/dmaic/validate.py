@@ -2,7 +2,8 @@
 
 Code checks, in order: the proposal's shape; the change cap; every path (and `from`
 path) on the editable whitelist; every change citing a verified controllable root cause
-whose cause category is the surface of the path; the patch applies; the fixed parts of the
+whose cause category is the surface of the path; the change set is not that of an
+earlier rejected or rolled-back version; the patch applies; the fixed parts of the
 configuration are unchanged; and the result validates as a HarnessConfig (bounds and
 stage order). Any problem rejects the whole proposal.
 """
@@ -16,6 +17,7 @@ from pydantic import ValidationError
 
 from ..contracts.config import HarnessConfig, surface_of
 from ..contracts.records import Change
+from .history import change_set
 
 # Parts of the configuration no proposal may change, whatever the patch looks like.
 FIXED_KEYS = ("task_family", "model", "budgets", "stage_catalog", "optional_stage_catalog", "change_cap")
@@ -139,12 +141,14 @@ def validate_proposal(
     *,
     new_version_id: str,
     lesson_status: str = "verified",
+    refused: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
 ) -> tuple[dict[str, Any] | None, list[Change], list[str]]:
     """Validate a proposal against its parent configuration.
 
     `lessons` maps lesson id to the root causes the agent was given (only those may be
-    cited). Returns (candidate config dict or None, changes, reasons); no reasons means
-    valid.
+    cited). `refused` maps the id of each earlier rejected or rolled-back version to its
+    JSON Patch ops; a proposal with the same change set (order-insensitive) is refused.
+    Returns (candidate config dict or None, changes, reasons); no reasons means valid.
     """
     if not isinstance(proposal, Mapping):
         return None, [], ["the proposal is not a JSON object"]
@@ -190,6 +194,9 @@ def validate_proposal(
                     f"change {i}: {op.path} is a {surface} surface but root cause {change.lesson_id} "
                     f"is a {lesson.get('cause_category')} cause"
                 )
+    if refused and len(changes) == len(raw):
+        mine = change_set([c.op.model_dump(by_alias=True) for c in changes])
+        reasons += [f"repeats rejected proposal {vid}" for vid, ops in refused.items() if change_set(ops) == mine]
     if reasons:
         return None, changes, reasons
 

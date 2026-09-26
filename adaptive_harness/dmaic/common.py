@@ -6,9 +6,9 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping, Sequence, get_args
 
-from ..contracts.common import CHECK_IDS, canonical_sha256
+from ..contracts.common import CHECK_IDS, Arm, canonical_sha256
 from ..contracts.protocol import ChatMessage
 from ..contracts.records import Experiment, ExperimentCase, Phase, Tollgate
 from ..store.records import get_experiment, save_experiment, save_phase, update_experiment
@@ -96,6 +96,21 @@ def add_arm(deps: Deps, experiment_id: str, arm: str) -> None:
     exp = load_experiment(deps, experiment_id)
     if arm not in exp.arms:
         update_experiment(deps.store, experiment_id, {"arms": [*exp.arms, arm]})
+
+
+def sync_arms(deps: Deps, experiment_id: str) -> list[str]:
+    """Add to `experiments.arms` every arm with stored runs for the experiment, however
+    the runs were launched: the listed arms first, then new ones in first-run order."""
+    exp = load_experiment(deps, experiment_id)
+    arms = list(exp.arms)
+    known = set(get_args(Arm))
+    for run in deps.store.find("runs", {"experiment_id": experiment_id}, sort=[("started_at", 1), ("_id", 1)]):
+        arm = run.get("arm")
+        if arm in known and arm not in arms:
+            arms.append(arm)
+    if arms != list(exp.arms):
+        update_experiment(deps.store, experiment_id, {"arms": arms})
+    return arms
 
 
 # ---------------------------------------------------------------- runs and verdicts
