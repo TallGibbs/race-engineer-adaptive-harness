@@ -78,56 +78,57 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <h1>Adaptive Harness: an agentic engineering team that learns from its own runs</h1>
 <p class="lede">An agentic engineering team (a data engineer, a statistician, and the lead role that writes the brief, named <code>race_engineer</code> in the code) whose harness learns from its own recorded runs and proposes changes to its own configuration. A fixed evaluator decides which changes are kept, and MongoDB Atlas, including Atlas Vector Search for lessons, is its memory. The harness is the product. Built on 2026-09-26 at the MongoDB hackathon for Statement One, Recursive Harnessing, and trialed on briefs built from public motorsport timing data (FastF1).</p>
 <p class="note">This project is unofficial and is not associated with the Formula 1 companies.</p>
+<p class="note">Reports and command output use short identifiers such as S4, E7, R2, D2, v4, and M1. Each family is explained in <a href="#terms">Terms</a>.</p>
 <nav>
 <a href="#what">What it is</a><a href="#how">How it works</a><a href="#improve">How it improves</a>
 <a href="#mongodb">MongoDB</a><a href="#experiments">Experiments</a><a href="#learned">What we learned</a>
-<a href="#provenance">Provenance</a><a href="#limits">Limits</a><a href="#links">Links</a>
+<a href="#provenance">Provenance</a><a href="#limits">Limits</a><a href="#terms">Terms</a><a href="#links">Links</a>
 </nav>
 </header>
 
 <section id="what">
 <h2>What it is</h2>
 <p>The claim under test: a harness that records its own runs can find the root causes of its defects in those records and change its own process so that it passes more checks on a fixed evaluation it cannot edit, without getting worse elsewhere. The design fits any analytics and engineering workflow where outputs must cite their evidence.</p>
-<p>In the trial, the team writes two brief types:</p>
+<p>In the trial, the team writes two kinds of brief:</p>
 <ul>
-<li><code>venue_brief</code>: how often Grand Prix races at a venue were interrupted by a safety car (SC) or a virtual safety car (VSC), with counts, rates, and 90% Wilson intervals.</li>
-<li><code>race_audit</code>: whether a given race had an SC, a VSC, or a red flag.</li>
+<li>A venue brief (<code>venue_brief</code>): how often Grand Prix races at a venue were interrupted by a safety car (SC) or a virtual safety car (VSC), with counts, rates, and 90% confidence intervals (Wilson method).</li>
+<li>A race audit (<code>race_audit</code>): whether a given race had an SC, a VSC, or a red flag.</li>
 </ul>
-<p>Every message, tool call, tool result, check, and decision is written to MongoDB Atlas. An improvement cycle (DMAIC: define, measure, analyze, improve, control) reads those records, proposes changes to the harness configuration, and keeps a change only if a fixed evaluator, running as a separate process, shows it passes more checks without regressions.</p>
+<p>Every message, tool call, tool result, check, and decision is written to MongoDB Atlas. An improvement cycle reads those records, proposes changes to the harness configuration, and keeps a change only if a fixed evaluator, running as a separate process, shows it passes more checks without getting worse anywhere. The cycle follows the five phases of DMAIC, a method from Six Sigma quality work: define the problem, measure it, analyze its causes, improve the process, and control the result.</p>
 </section>
 
 <section id="how">
 <h2>How it works</h2>
-<p>Three role agents work each case in one bounded discussion. The race engineer runs on Claude Opus 5.5; the statistician and the data engineer run on Claude Sonnet 5. The stages are fixed by the harness configuration:</p>
+<p>Three role agents work each case in one bounded discussion. The race engineer runs on Claude Opus 5.5; the statistician and the data engineer run on Claude Sonnet 5. The steps are fixed by the harness configuration, and each has a short id that appears in the records:</p>
 <div class="table-wrap"><table>
-<tr><th>stage</th><th>name</th><th>who</th><th>tools</th></tr>
-<tr><td>S1</td><td>frame</td><td>race engineer</td><td></td></tr>
-<tr><td>S2a, S2b</td><td>assess (in parallel, blind to each other)</td><td>statistician; data engineer</td><td></td></tr>
-<tr><td>S3</td><td>challenge (each role responds once to the other two)</td><td>all three</td><td></td></tr>
-<tr><td>S4</td><td>gather</td><td>data engineer</td><td><code>list_events</code>, <code>race_control_messages</code>, <code>track_status</code></td></tr>
-<tr><td>S5</td><td>estimate</td><td>statistician</td><td><code>interval</code></td></tr>
-<tr><td>S6</td><td>brief</td><td>race engineer</td><td></td></tr>
-<tr><td>S7</td><td>validate (code only): schema plus any enabled catalog checks, with one repair round</td><td>code</td><td></td></tr>
+<tr><th>step</th><th>what happens</th><th>who</th><th>tools</th><th>id</th></tr>
+<tr><td>1</td><td>Frame the question.</td><td>race engineer</td><td></td><td>S1</td></tr>
+<tr><td>2</td><td>Assess the question, in parallel, each without seeing the other's assessment.</td><td>statistician; data engineer</td><td></td><td>S2a, S2b</td></tr>
+<tr><td>3</td><td>Challenge: each role responds once to the other two.</td><td>all three</td><td></td><td>S3</td></tr>
+<tr><td>4</td><td>Gather the race data.</td><td>data engineer</td><td><code>list_events</code>, <code>race_control_messages</code>, <code>track_status</code></td><td>S4</td></tr>
+<tr><td>5</td><td>Estimate rates and intervals.</td><td>statistician</td><td><code>interval</code></td><td>S5</td></tr>
+<tr><td>6</td><td>Write the brief.</td><td>race engineer</td><td></td><td>S6</td></tr>
+<tr><td>7</td><td>Validate the brief, in code only: a format check, plus any optional in-harness checks that are switched on. If one of those optional checks fails, the brief goes back to the race engineer for one repair.</td><td>code</td><td></td><td>S7</td></tr>
 </table></div>
-<p>Each case run has fixed budgets: 40 model calls, 60 tool calls, 900 seconds. The tools read public timing data through the open-source FastF1 library into a local cache outside the repository, with an as-of guard. The fixed evaluator is the only code that reads the answer key; it scores eight checks per run (E1 schema, E2 venue, E3 coverage, E4 indicators, E5 arithmetic, E6 disposition, E7 evidence, E8 budget).</p>
+<p>Each case run has fixed budgets: 40 model calls, 60 tool calls, 900 seconds. The tools read public timing data through the open-source FastF1 library into a local cache outside the repository, with a guard that refuses data dated after the case's as-of date. The fixed evaluator is the only code that reads the answer key. It scores eight checks per run: the brief has a valid format (E1 schema), names the right venue (E2 venue), counts exactly the right races (E3 coverage), gets each safety-car, virtual-safety-car, and red-flag answer right (E4 indicators), gets the counts, rates, and intervals right (E5 arithmetic), gives a verdict or withholds one correctly (E6 disposition), backs every race row with recorded tool results about that race (E7 evidence), and stays within budget (E8 budget).</p>
 
 <figure>
 <svg viewBox="0 0 960 600" role="img" aria-labelledby="arch-title arch-desc">
 <title id="arch-title">Architecture</title>
-<desc id="arch-desc">The runner holds three roles and stages S1 to S7. The data engineer calls data tools over the FastF1 cache. The runner writes runs and events to MongoDB Atlas and reads the pinned configuration and verified lessons from it. The evaluator, a separate process, alone reads the answer key, reads outputs and events, and writes evaluations. The DMAIC improvement agent reads development-case evaluations and writes lessons, harness versions, and experiments.</desc>
+<desc id="arch-desc">The runner holds three roles and the seven steps of a case run. The data engineer calls data tools over the FastF1 cache. The runner writes runs and events to MongoDB Atlas and reads from it the configuration in use and the verified lessons. The evaluator, a separate process, alone reads the answer key, reads outputs and events, and writes evaluations. The DMAIC improvement agent reads development-case evaluations and writes lessons, harness versions, and experiments.</desc>
 <defs>
 <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker>
 </defs>
 <rect class="frame" x="10" y="10" width="560" height="250" rx="8"/>
 <text class="t" x="24" y="34">Runner: one bounded discussion per case run</text>
 <rect class="b" x="24" y="48" width="170" height="70" rx="6"/>
-<text class="t" x="34" y="70">Race engineer</text><text class="s" x="34" y="89">Claude Opus 5.5</text><text class="s" x="34" y="107">S1, S3, S6 brief</text>
+<text class="t" x="34" y="70">Race engineer</text><text class="s" x="34" y="89">Claude Opus 5.5</text><text class="s" x="34" y="107">frames; writes brief</text>
 <rect class="b" x="206" y="48" width="170" height="70" rx="6"/>
-<text class="t" x="216" y="70">Statistician</text><text class="s" x="216" y="89">Claude Sonnet 5</text><text class="s" x="216" y="107">S2a, S3, S5 estimate</text>
+<text class="t" x="216" y="70">Statistician</text><text class="s" x="216" y="89">Claude Sonnet 5</text><text class="s" x="216" y="107">assesses; estimates</text>
 <rect class="b" x="388" y="48" width="170" height="70" rx="6"/>
-<text class="t" x="398" y="70">Data engineer</text><text class="s" x="398" y="89">Claude Sonnet 5</text><text class="s" x="398" y="107">S2b, S3, S4 gather</text>
+<text class="t" x="398" y="70">Data engineer</text><text class="s" x="398" y="89">Claude Sonnet 5</text><text class="s" x="398" y="107">assesses; gathers data</text>
 <rect class="b" x="24" y="132" width="534" height="46" rx="6"/>
-<text class="s" x="36" y="160">S1 → S2a ∥ S2b → S3 → S4 → S5 → S6 → S7 (code: schema + catalog checks)</text>
+<text class="s" x="36" y="160">frame → 2 blind assessments → challenge → gather → estimate → brief → validate</text>
 <rect class="b" x="24" y="192" width="534" height="54" rx="6"/>
 <text class="s" x="36" y="214">Coordinator: context per role from the context policy;</text>
 <text class="s" x="36" y="234">budgets 40 model calls, 60 tool calls, 900 s; records every event</text>
@@ -137,34 +138,34 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <rect class="k" x="10" y="400" width="270" height="52" rx="6"/>
 <text class="t" x="22" y="422">FastF1 cache</text><text class="s" x="22" y="441">public timing data, outside the repo</text>
 <path class="ar k" d="M473 260 V280 H145 V300" marker-end="url(#ah)"/>
-<text class="lbl" x="300" y="276">S4 tool calls and results</text>
+<text class="lbl" x="300" y="276">gather-step tool calls and results</text>
 <path class="ar k" d="M145 362 V400" marker-end="url(#ah)"/>
 
 <rect class="p" x="300" y="300" width="270" height="62" rx="6"/>
-<text class="t" x="312" y="324">Fixed evaluator</text><text class="s" x="312" y="346">separate process, checks E1 to E8</text>
+<text class="t" x="312" y="324">Fixed evaluator</text><text class="s" x="312" y="346">separate process, eight checks</text>
 <rect class="p" x="300" y="400" width="270" height="52" rx="6"/>
 <text class="t" x="312" y="422">Answer key</text><text class="s" x="312" y="441">read only by the evaluator</text>
 <path class="ar p" d="M435 400 V362" marker-end="url(#ah)"/>
 
 <rect class="a" x="10" y="500" width="560" height="84" rx="6"/>
 <text class="t" x="22" y="524">DMAIC improvement agent (Claude Opus 5.5)</text>
-<text class="s" x="22" y="546">fixed prompt per phase; every tollgate decided by code;</text>
+<text class="s" x="22" y="546">fixed prompt per phase; code decides whether each phase passes;</text>
 <text class="s" x="22" y="566">sees development-case evidence only</text>
 
 <rect class="frame" x="620" y="10" width="330" height="574" rx="8"/>
 <text class="t" x="634" y="34">MongoDB Atlas</text>
 <rect class="g" x="634" y="48" width="302" height="56" rx="6"/><text class="t" x="646" y="70">runs</text><text class="s" x="646" y="92">one per case run, totals, output</text>
 <rect class="g" x="634" y="114" width="302" height="56" rx="6"/><text class="t" x="646" y="136">events</text><text class="s" x="646" y="158">unique (run_id, seq)</text>
-<rect class="g" x="634" y="180" width="302" height="56" rx="6"/><text class="t" x="646" y="202">harness_versions</text><text class="s" x="646" y="224">one pinned version</text>
-<rect class="g" x="634" y="300" width="302" height="62" rx="6"/><text class="t" x="646" y="322">lessons</text><text class="s" x="646" y="346">lessons_vector, snapshot pre-filter</text>
-<rect class="g" x="634" y="400" width="302" height="52" rx="6"/><text class="t" x="646" y="422">evaluations</text><text class="s" x="646" y="441">E1 to E8 verdicts, hashes</text>
-<rect class="g" x="634" y="500" width="302" height="62" rx="6"/><text class="t" x="646" y="524">experiments</text><text class="s" x="646" y="546">phases, tollgates, R0 to R4</text>
+<rect class="g" x="634" y="180" width="302" height="56" rx="6"/><text class="t" x="646" y="202">harness_versions</text><text class="s" x="646" y="224">exactly one version in use</text>
+<rect class="g" x="634" y="300" width="302" height="62" rx="6"/><text class="t" x="646" y="322">lessons</text><text class="s" x="646" y="346">vector index, filtered by memory snapshot</text>
+<rect class="g" x="634" y="400" width="302" height="52" rx="6"/><text class="t" x="646" y="422">evaluations</text><text class="s" x="646" y="441">result of each check, hashes</text>
+<rect class="g" x="634" y="500" width="302" height="62" rx="6"/><text class="t" x="646" y="524">experiments</text><text class="s" x="646" y="546">phases, gate results, rule verdicts</text>
 
 <path class="ar g" d="M570 90 H634" marker-end="url(#ah)"/>
 <path class="ar g" d="M570 150 H634" marker-end="url(#ah)"/>
 <text class="lbl" x="576" y="144">events</text>
 <path class="ar g" d="M634 208 H570" marker-end="url(#ah)"/>
-<text class="lbl" x="574" y="202">pinned</text>
+<text class="lbl" x="574" y="202">in use</text>
 <path class="ar g" d="M634 318 H600 V240 H570" marker-end="url(#ah)"/>
 <text class="lbl" x="574" y="256">lessons</text>
 <path class="ar p" d="M634 160 H605 V330 H570" marker-end="url(#ah)"/>
@@ -179,26 +180,26 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 
 <section id="improve">
 <h2>How it improves</h2>
-<p>The harness improves its own process with DMAIC. An improvement agent (Claude Opus 5.5, fixed prompt) writes the text of each phase; code decides every tollgate. The cycle stops at the first tollgate that does not pass, and the stop is recorded as the outcome.</p>
+<p>The harness improves its own process with the five DMAIC phases. An improvement agent (Claude Opus 5.5, fixed prompt) writes the text of each phase. At the end of each phase, code, not the agent, applies a pass-or-stop test (in DMAIC terms, a tollgate). The cycle stops at the first test that does not pass, and the stop is recorded as the outcome.</p>
 <div class="table-wrap"><table>
-<tr><th>phase</th><th>what happens</th><th>tollgate (code)</th></tr>
-<tr><td>Define</td><td>Code builds a charter from the baseline's development-case evaluations; the agent writes a problem statement.</td><td>At least one development defect.</td></tr>
-<tr><td>Measure</td><td>Confirm evaluator and answer-key hashes; re-score every baseline run in a fresh evaluator process; defects per opportunity, Pareto, cost.</td><td>Verdicts identical, hashes match, no HARNESS result after one rerun.</td></tr>
-<tr><td>Analyze</td><td>For each development defect the agent returns a root cause with a why-chain of one to five statements and the events it came from; code verifies each against the recorded run. Verified causes become lessons.</td><td>At least one verified root cause in a category the harness can change (stages, context, in-harness checks).</td></tr>
-<tr><td>Improve</td><td>The agent proposes up to three configuration changes, each citing a verified root cause. A validator checks paths, bounds, citations, and refuses an exact repeat of a rejected change set. A fresh pilot runs two arms on the same six cases with the same memory.</td><td>The acceptance rules R0 to R4.</td></tr>
-<tr><td>Control</td><td>Pin the accepted version by its configuration hash and arm a control plan from the pilot.</td><td>Plan armed; every confirmation case meets its threshold.</td></tr>
+<tr><th>phase</th><th>what happens</th><th>test to continue (decided by code)</th></tr>
+<tr><td>Define</td><td>Code builds a charter from the scores of the starting runs on the development cases; the agent writes a problem statement.</td><td>At least one failed check on a development case.</td></tr>
+<tr><td>Measure</td><td>Confirm the fingerprints (hashes) of the evaluator and the answer key; re-score every starting run in a fresh evaluator process; count failures per scored check, rank them by check (a Pareto table), and record cost.</td><td>Identical scores, matching fingerprints, and no measurement-system failure after one rerun.</td></tr>
+<tr><td>Analyze</td><td>For each failure on a development case the agent returns a root cause, with a chain of one to five "why" statements and the recorded events it came from; code verifies each against the recorded run. Verified causes are stored as lessons.</td><td>At least one verified root cause of a kind the harness is allowed to change: the order of steps, what each role receives, or the in-harness checks.</td></tr>
+<tr><td>Improve</td><td>The agent proposes up to three configuration changes, each citing a verified root cause. A validator checks that each change is allowed and within bounds, that its citation is valid, and that it is not an exact repeat of a rejected set of changes. A fresh pilot then runs two groups of runs on the same six cases with the same memory.</td><td>The five acceptance rules below.</td></tr>
+<tr><td>Control</td><td>Make the accepted version the one in use (pin it by its configuration fingerprint) and switch on a control plan built from the pilot.</td><td>Plan switched on; every confirmation case meets its threshold.</td></tr>
 </table></div>
-<p>The two pilot arms isolate the configuration change from the lessons: <code>memory_only</code> is the current version with the new lessons (snapshot M1), and <code>candidate</code> is the proposed version with the same lessons.</p>
+<p>The two pilot groups (arms) separate the effect of the configuration change from the effect of the lessons. The <code>memory_only</code> arm runs the current version with the new lessons (memory snapshot M1), and the <code>candidate</code> arm runs the proposed version with the same lessons. Any difference between them comes from the configuration change.</p>
 <h3>Acceptance rules</h3>
 <ul class="rules">
-<li><b>R0 validity:</b> no run ends as a measurement-system failure (HARNESS) after one rerun.</li>
-<li><b>R1 no regression:</b> every check that passes on a control case under the current version also passes under the candidate.</li>
-<li><b>R2 improvement:</b> the candidate passes strictly more development-case checks.</li>
-<li><b>R3 held-out:</b> the candidate passes at least as many held-out checks.</li>
-<li><b>R4 time:</b> the candidate's total wall-clock time is at most 1.5 times the current version's.</li>
+<li><b>Valid measurement (R0):</b> no run ends as a measurement-system failure (recorded as HARNESS) after one rerun.</li>
+<li><b>No regression (R1):</b> every check that passes on a control case under the current version also passes under the candidate.</li>
+<li><b>Improvement (R2):</b> the candidate passes strictly more checks on the development cases.</li>
+<li><b>Held-out (R3):</b> the candidate passes at least as many checks on the held-out cases.</li>
+<li><b>Time (R4):</b> the candidate's total wall-clock time is at most 1.5 times the current version's.</li>
 </ul>
-<p>Cases come in three sets of two: development (D1, D2), held-out (H1, H2), and control (P1, P2). Only development-case evidence enters define, analyze, or any prompt the improvement agent sees. Held-out and control results are used only by code.</p>
-<p>Since exp2, the improve phase is shown the earlier proposals with their development-case outcomes (proposal history), and since commit <code>1ba48c8</code> it also sees proposals the validator refused.</p>
+<p>Cases come in three sets of two. The development cases (D1, D2) are the only ones the improvement agent learns from. The held-out cases (H1, H2) test whether a change generalizes. The control cases (P1, P2) test that nothing got worse. In each set, case 1 is a venue brief and case 2 is a race audit. Only development-case evidence enters the define and analyze phases or any prompt the improvement agent sees. Held-out and control results are used only by code.</p>
+<p>Since the second experiment (exp2), the improve phase is shown the earlier proposals with their development-case outcomes (the proposal history), and since commit <code>1ba48c8</code> it also sees proposals the validator refused.</p>
 </section>
 
 <section id="mongodb">
@@ -213,17 +214,18 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <tr><td><code>evaluations</code></td><td>The evaluator's verdicts.</td><td>run_id, case_id, arm, checks E1 to E8 (PASS, FAIL, HARNESS, NA), opportunities, defects, evaluator_sha256, key_sha256</td><td>run_id; (experiment_id, arm, case_id)</td></tr>
 <tr><td><code>experiments</code></td><td>One document per improvement cycle.</td><td>cases, arms, dmaic.{phase}.{status, artifact, tollgate}, acceptance R0 to R4, decision, candidate_version, report_path</td><td>created_at</td></tr>
 </table></div>
+<p class="note">Field names are shown as stored. The identifiers in them (E1 to E8, R0 to R4, tollgate, pinned, arm) are explained in <a href="#terms">Terms</a>.</p>
 
 <h3>Why these indexes</h3>
 <ul>
 <li><b>Unique (run_id, seq) on events.</b> Event writes are idempotent: a retry that hits a duplicate key counts as already written, so a run's history never has gaps or doubles.</li>
-<li><b>Partial unique index on pinned.</b> The database, not only the code, guarantees that exactly one harness version is pinned. Pinning unpins the old version first. v1 is the pinned version today.</li>
-<li><b>Compound indexes on (experiment_id, arm, case_id).</b> Reports, acceptance, and the report's per-arm tables read by experiment and arm.</li>
-<li><b>Partial index control_checks.</b> Serves the evaluator's control-history query (control outcomes of a pinned version) without scanning every event. The before-and-after explain is below.</li>
+<li><b>Partial unique index on pinned.</b> Exactly one harness version is marked as the one in use (pinned), and the database, not only the code, guarantees it. Making a new version the one in use unmarks the old version first. The first configuration, v1, is the version in use today.</li>
+<li><b>Compound indexes on (experiment_id, arm, case_id).</b> Reports, the acceptance rules, and the report's tables per group of runs all read by experiment and arm.</li>
+<li><b>Partial index control_checks.</b> Serves the evaluator's query for the control history of the version in use (the recorded results of checking its later runs against its control plan) without scanning every event. The before-and-after explain is below.</li>
 </ul>
 
 <h3>Vector search with a snapshot pre-filter</h3>
-<p>Each lesson is embedded with <code>BAAI/bge-small-en-v1.5</code> (384 dimensions, cosine). Roles retrieve the top 3 verified lessons at their first stage through <code>$vectorSearch</code> on <code>lessons_vector</code>, with the filter fields declared in the index:</p>
+<p>Each lesson is embedded with <code>BAAI/bge-small-en-v1.5</code> (384 dimensions, cosine). Each role retrieves the top 3 verified lessons at its first step through <code>$vectorSearch</code> on <code>lessons_vector</code>, with the filter fields declared in the index:</p>
 <pre><code>{ "$vectorSearch": {
     "index": "lessons_vector", "path": "embedding",
     "queryVector": [...], "numCandidates": 100, "limit": 3,
@@ -232,7 +234,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
       { "scope":    { "$eq": "neutralization_brief" } },
       { "snapshot": { "$eq": "M1" } } ] } } },
 { "$addFields": { "score": { "$meta": "vectorSearchScore" } } }</code></pre>
-<p>The pre-filter runs inside the index, so a run on memory snapshot M0 cannot see lessons written by a cycle (M1), and unverified root causes are never retrieved. This is what makes the <code>baseline</code> (M0) and <code>memory_only</code> (M1) arms a fair comparison.</p>
+<p>The pre-filter runs inside the index. A run on the memory as it stood before any cycle (snapshot M0) cannot see lessons written by a cycle (snapshot M1), and unverified root causes are never retrieved. This is what makes the <code>baseline</code> arm (without the new lessons) and the <code>memory_only</code> arm (with them) a fair comparison.</p>
 
 <h3>The aggregation used by <code>show cost</code></h3>
 <p>Token cost per arm, role, and model comes from the recorded model-call events, joined to their run for the arm (<code>python -m adaptive_harness show cost</code>). The <code>$match</code> is served by the <code>run_type</code> index:</p>
@@ -248,7 +250,7 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
   { "$sort": { "_id.arm": 1, "_id.role": 1, "_id.model": 1 } } ]</code></pre>
 
 <h3>control_checks explain, before and after</h3>
-<p>The evaluator's control step reads the recorded control outcomes of a pinned version each time it checks a run:</p>
+<p>Each time the evaluator checks a run of the version in use, it reads the recorded control outcomes of that version:</p>
 <pre><code>db.events.find({
   "type": "check",
   "content.control": { "$exists": true },
@@ -277,54 +279,55 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 
 <section id="experiments">
 <h2>The experiments</h2>
-<p>Each experiment is one DMAIC cycle on the same six cases. Numbers are taken from the generated reports. exp3 also ran a repeat of the development cases under v1 (arm repeat): no check changed between the identical runs. Two exp3 baseline runs (P1, P2) ended HARNESS when the model provider refused requests for insufficient account credit; each was rerun once and the reruns are scored.</p>
+<p>Each experiment (exp1, exp2, exp3) is one improvement cycle on the same six cases. Numbers are taken from the generated reports. exp3 also ran the two development cases a second time under v1 (the <code>repeat</code> arm): no check result changed between the identical runs. Two exp3 starting runs, on the control cases P1 and P2, ended as measurement-system failures (HARNESS) when the model provider refused requests for insufficient account credit; each was rerun once and the reruns are scored.</p>
 <div class="cards">
 <article class="card">
 <h3>exp1 <span class="tag rej">rejected</span></h3>
 <dl>
-<dt>What improve was shown</dt>
-<dd>One verified root cause: E7 (evidence) failed on D2 because the only S7 check was schema, which cannot see that a race row cites no race-specific tool result. Development baseline: 1 defect in 12 opportunities.</dd>
+<dt>What the improvement agent was shown</dt>
+<dd>One verified root cause: the evidence check (E7) failed on the development race audit (D2) because the only check at the final validation step (S7) was a format check, which cannot see that a race row cites no tool result about that race. Starting point on the development cases: 1 failed check in 12 scored checks.</dd>
 <dt>What it proposed</dt>
-<dd>v2: enable <code>/checks/venue_match</code>. The agent stated this was a trial, not a confirmed fix.</dd>
+<dd>Version v2: switch on the optional in-harness check <code>venue_match</code>. The agent stated this was a trial, not a confirmed fix.</dd>
 <dt>Rule verdicts</dt>
-<dd>R0 yes; R1 yes; <b>R2 no</b> (development checks: candidate 11, current 11); R3 yes (10 and 10); R4 yes (1134.9 s against 1183.6 s).</dd>
+<dd>Valid measurement (R0) yes; no regression (R1) yes; <b>improvement (R2) no</b>: development checks passed, candidate 11, current 11; held-out (R3) yes, 10 and 10; time (R4) yes, 1134.9 s against 1183.6 s.</dd>
 <dt>Decision</dt>
-<dd>Rejected at improve. v1 stays pinned. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp1.md">Report</a></dd>
+<dd>Rejected at the improve phase. v1 stays the version in use. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp1.md">Report</a></dd>
 </dl>
 </article>
 <article class="card">
 <h3>exp2 <span class="tag rej">rejected</span></h3>
 <dl>
-<dt>What improve was shown</dt>
-<dd>A fresh verified root cause, again E7 on D2 with the same cause, plus the proposal history: v2 (venue_match) rejected on R2, 11 against 11.</dd>
+<dt>What the improvement agent was shown</dt>
+<dd>A fresh verified root cause, again the evidence check (E7) failing on D2 for the same reason, plus the proposal history: v2 (<code>venue_match</code> on) rejected because development checks did not improve, 11 against 11.</dd>
 <dt>What it proposed</dt>
-<dd>v3: enable <code>/checks/source_agreement</code>, the untried option; the agent called it "a partial fit at best".</dd>
+<dd>Version v3: switch on the optional in-harness check <code>source_agreement</code>, the untried option; the agent called it "a partial fit at best".</dd>
 <dt>Rule verdicts</dt>
-<dd>R0 yes; R1 yes; <b>R2 no</b> (development checks: candidate 11, current 11); R3 yes (10 and 10); R4 yes (1066.3 s against 986.0 s).</dd>
+<dd>Valid measurement (R0) yes; no regression (R1) yes; <b>improvement (R2) no</b>: development checks passed, candidate 11, current 11; held-out (R3) yes, 10 and 10; time (R4) yes, 1066.3 s against 986.0 s.</dd>
 <dt>Decision</dt>
-<dd>Rejected at improve. v1 stays pinned. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp2.md">Report</a></dd>
+<dd>Rejected at the improve phase. v1 stays the version in use. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp2.md">Report</a></dd>
 </dl>
 </article>
 <article class="card">
 <h3>exp3 <span class="tag rej">rejected</span></h3>
 <dl>
-<dt>What improve was shown</dt>
-<dd>A third verified root cause for E7 on D2 (measurement), the proposal history (v2 and v3, both rejected on R2), and the operator-added <code>row_evidence</code> check in the catalog, off by default.</dd>
+<dt>What the improvement agent was shown</dt>
+<dd>A third verified root cause for the evidence check (E7) failing on D2 (a gap in the in-harness checks), the proposal history (v2 and v3, both rejected because development checks did not improve), and a new optional check, <code>row_evidence</code>, that the operator had added to the list of available checks, switched off.</dd>
 <dt>What it proposed</dt>
-<dd>v4: add <code>/checks/row_evidence</code> with enabled true, the check the lessons describe. Validator: valid.</dd>
+<dd>Version v4: switch on <code>row_evidence</code>, the check the lessons describe. Validator: valid.</dd>
 <dt>Rule verdicts</dt>
-<dd>R0 yes; <b>R1 no</b> (control case P1 lost E2 venue and E3 coverage); <b>R2 no</b> (development checks: candidate 11, current 11); R3 yes (10 and 10); R4 yes (1181.9 s against 993.0 s).</dd>
+<dd>Valid measurement (R0) yes; <b>no regression (R1) no</b>: the control venue brief P1 lost the venue (E2) and coverage (E3) checks; <b>improvement (R2) no</b>: development checks passed, candidate 11, current 11; held-out (R3) yes, 10 and 10; time (R4) yes, 1181.9 s against 993.0 s.</dd>
 <dt>What the check did</dt>
-<dd>row_evidence passed in all six candidate runs, so the repair round never fired. The check accepts a race row with at least one race-specific citation; the evaluator's E7 requires every citation to be race-specific. D2's E7 still failed.</dd>
+<dd><code>row_evidence</code> passed in all six candidate runs, so the repair step never fired. The check accepts a race row with at least one citation about that race; the evaluator's evidence check (E7) requires every citation to be about that race. D2's evidence check still failed.</dd>
 <dt>Decision</dt>
-<dd>Rejected at improve. v1 stays pinned. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp3.md">Report</a></dd>
+<dd>Rejected at the improve phase. v1 stays the version in use. <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness/blob/main/reports/exp3.md">Report</a></dd>
 </dl>
 </article>
 </div>
 
 <h3>Checks passed per case set</h3>
+<p>Each column is one arm, a group of runs over the same cases. M0 is the memory before the cycle; M1 adds the lessons the cycle wrote.</p>
 <div class="table-wrap"><table>
-<tr><th>experiment</th><th>case set</th><th>baseline (v1, M0)</th><th>memory_only (v1, M1)</th><th>candidate (M1)</th></tr>
+<tr><th>experiment</th><th>case set</th><th>baseline: v1, M0</th><th>memory_only: v1, M1</th><th>candidate: proposed version, M1</th></tr>
 <tr><td>exp1</td><td>development</td><td>11</td><td>11</td><td>11 (v2)</td></tr>
 <tr><td>exp1</td><td>held-out</td><td>10</td><td>10</td><td>10</td></tr>
 <tr><td>exp1</td><td>control</td><td>10</td><td>8</td><td>10</td></tr>
@@ -340,11 +343,11 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <section id="learned">
 <h2>What we learned</h2>
 <ul>
-<li><b>The same verified lesson across cycles.</b> Each cycle's analyze phase, working from fresh runs, verified the same root cause: E7 on D2, category measurement. The only S7 check was schema, so nothing tested that each race row cites a same-run tool result about that race. Three such lessons are stored, one per cycle.</li>
+<li><b>The same verified lesson across cycles.</b> Each cycle's analyze phase, working from fresh runs, verified the same root cause for the evidence check (E7) failing on the development race audit (D2), and placed it in the category of in-harness checks (measurement). The only check at the final validation step was a format check, so nothing tested that each race row cites a tool result from the same run about that race. Three such lessons are stored, one per cycle.</li>
 <li><b>Memory alone did not improve results.</b> The <code>memory_only</code> arm (v1 plus the new lessons) passed 11 development checks in exp1, exp2, and exp3, the same as the baseline without them.</li>
-<li><b>Scores vary between identical runs.</b> Under the same v1 configuration, the control cases passed 10, 8, 9, 10, 10, and 10 checks across the six scored v1 arms with control cases in exp1 to exp3 (P1's E2 venue and E3 coverage flipped). This is why R2 compares against the current version run fresh, and why no statistical claim is made.</li>
-<li><b>The evaluator refused unproven changes.</b> v2 (venue_match) and v3 (source_agreement) each passed 11 development checks against 11, so R2 failed and v1 stayed pinned. The agent had flagged both as uncertain in its own risk statements. v4 was refused too (below).</li>
-<li><b>The operator added the check the lessons asked for, and the harness chose to use it.</b> No editable check tested per-row evidence, so after two cycles the operator added <code>row_evidence</code> to the catalog, off by default, with one S7 repair round. In exp3 the improvement agent, not the operator, proposed enabling it (v4). The acceptance rules rejected v4 on R1 (P1 lost E2 and E3) and R2 (11 against 11). row_evidence passed in all six candidate runs, so the repair round never fired: the check accepts a row with at least one race-specific citation, and the evaluator requires every citation to be race-specific. The check is looser than the measurement it was meant to protect.</li>
+<li><b>Scores vary between identical runs.</b> Under the same v1 configuration, the control cases passed 10, 8, 9, 10, 10, and 10 checks across the six scored v1 arms with control cases in exp1 to exp3 (the control venue brief P1 flipped on the venue (E2) and coverage (E3) checks). This is why the improvement rule (R2) compares the candidate with the current version run fresh, and why no statistical claim is made.</li>
+<li><b>The evaluator refused unproven changes.</b> v2 (<code>venue_match</code> on) and v3 (<code>source_agreement</code> on) each passed 11 development checks against 11, so the improvement rule failed and v1 stayed in use. The agent had flagged both as uncertain in its own risk statements. v4 was refused too (below).</li>
+<li><b>The operator added the check the lessons asked for, and the harness chose to use it.</b> No check the harness could switch on tested the evidence of each row, so after two cycles the operator added <code>row_evidence</code> to the list of available checks, switched off, together with one repair step at final validation. In exp3 the improvement agent, not the operator, proposed switching it on (v4). The acceptance rules rejected v4 on no regression (R1: P1 lost the venue and coverage checks) and on improvement (R2: 11 against 11). <code>row_evidence</code> passed in all six candidate runs, so the repair step never fired: the check accepts a row with at least one citation about that race, and the evaluator requires every citation to be about that race. The check is looser than the measurement it was meant to protect.</li>
 </ul>
 </section>
 
@@ -352,9 +355,9 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <h2>Provenance and operator decisions</h2>
 <ul>
 <li><b>Evaluation data first.</b> <code>14d7030</code> (10:40 EDT) committed the cases, definitions, and frozen answer key before any harness code; <code>ecf78b2</code> (10:42) the quality specification; <code>703e771</code> (10:52) the frozen contract. The lanes were then built in parallel against the contract.</li>
-<li><b>Optional cases D2, H2, P2.</b> The only default development case, D1, has zero races at its venue, so it cannot exhibit citation defects. The three optional race-audit cases were published in <code>data/cases.json</code> with the defaults, before any harness code, and were used, not added. Every arm covers all six.</li>
-<li><b>Budgets raised before the baseline.</b> <code>1344432</code> (11:35) set per-case budgets from placeholders of 20 model calls, 40 tool calls, 600 s to 40, 60, 900 s. The first baseline run started at 11:49.</li>
-<li><b>row_evidence added to the catalog, off by default, with one repair round.</b> <code>032720a</code> and <code>f39d1fe</code>, merged as <code>dccd9f1</code> (13:30), after two cycles verified the same lesson. When an enabled catalog check fails, the S6 role revises once; if checks still fail the run is HOLD. Configurations stored before it keep their hashes. Enabling it is left to the improve phase and the acceptance rules.</li>
+<li><b>Optional race-audit cases D2, H2, P2.</b> The only default development case, the venue brief D1, has zero races at its venue, so it cannot exhibit citation defects. The three optional race-audit cases were published in <code>data/cases.json</code> with the defaults, before any harness code, and were used, not added. Every arm covers all six.</li>
+<li><b>Budgets raised before the first starting run.</b> <code>1344432</code> (11:35) set per-case budgets from placeholders of 20 model calls, 40 tool calls, 600 s to 40, 60, 900 s. The first baseline run started at 11:49.</li>
+<li><b><code>row_evidence</code> added to the list of available checks, switched off, with one repair step.</b> <code>032720a</code> and <code>f39d1fe</code>, merged as <code>dccd9f1</code> (13:30), after two cycles verified the same lesson. When a switched-on optional check fails at final validation, the race engineer revises the brief once; if checks still fail, the run ends on HOLD (the brief withholds its verdict and records why). Configurations stored before it keep their fingerprints (configuration hashes). Switching it on is left to the improve phase and the acceptance rules.</li>
 <li>All code was written on 2026-09-26 with AI coding assistants. The design notes and instructions given to them were written before the event and are not included.</li>
 </ul>
 </section>
@@ -363,10 +366,37 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 <h2>Limits</h2>
 <ul>
 <li>Six fixed cases (two development, two held-out, two control), one run per case per arm. No statistical claim; the models are not deterministic and a repeat could differ.</li>
-<li>No sigma level or capability index. The control plan uses specification thresholds, not statistical control limits, which need about 20 runs.</li>
-<li>No candidate has been accepted in exp1, exp2, or exp3; the control phase has not been reached, and v1 is still pinned.</li>
+<li>No sigma level or capability index (Six Sigma summary scores that need far more data). The control plan uses the specification's thresholds, not statistical control limits, which need about 20 runs.</li>
+<li>No candidate has been accepted in exp1, exp2, or exp3; the control phase has not been reached, and v1 is still the version in use.</li>
 <li>A hackathon prototype, not a production system.</li>
 </ul>
+</section>
+
+<section id="terms">
+<h2>Terms</h2>
+<p>Identifiers that appear in the reports, the records, and command output, one family per line.</p>
+<div class="table-wrap"><table>
+<tr><th>identifier</th><th>meaning</th></tr>
+<tr><td>S1 to S7 (S2a, S2b)</td><td>The steps of one case run: frame (S1), two blind assessments by the statistician (S2a) and the data engineer (S2b), challenge (S3), gather (S4), estimate (S5), write the brief (S6), validate in code (S7).</td></tr>
+<tr><td>X1 to X3</td><td>Optional extra steps a proposal may insert: identity check (X1), definitions (X2), reconcile sources (X3).</td></tr>
+<tr><td>E1 to E8</td><td>The evaluator's eight checks per run: schema (E1), venue (E2), coverage (E3), indicators (E4), arithmetic (E5), disposition (E6), evidence (E7), budget (E8).</td></tr>
+<tr><td>R0 to R4</td><td>The acceptance rules for a proposed version: valid measurement (R0), no regression on control cases (R1), improvement on development cases (R2), no loss on held-out cases (R3), time at most 1.5 times (R4).</td></tr>
+<tr><td>D, H, P cases</td><td>Case sets: development (D1, D2), held-out (H1, H2), control (P1, P2); case 1 in each set is a venue brief, case 2 a race audit.</td></tr>
+<tr><td>v1 to v4</td><td>Harness versions: v1 is the starting configuration and still in use; v2, v3, and v4 are the rejected candidates of exp1, exp2, and exp3.</td></tr>
+<tr><td>exp1 to exp3</td><td>Experiments, one improvement cycle each.</td></tr>
+<tr><td>arms</td><td>Groups of runs in an experiment: <code>baseline</code> (current version, memory M0), <code>repeat</code> (the development cases again, same setup), <code>memory_only</code> (current version, memory M1), <code>candidate</code> (proposed version, memory M1), <code>confirmation</code> (after acceptance; not yet run).</td></tr>
+<tr><td>M0, M1</td><td>Memory snapshots: M0 is memory before any cycle; M1 adds the verified lessons a cycle wrote.</td></tr>
+<tr><td>DMAIC</td><td>The five improvement phases from Six Sigma: define, measure, analyze, improve, control.</td></tr>
+<tr><td>tollgate</td><td>The pass-or-stop test code applies at the end of each phase.</td></tr>
+<tr><td>pinned</td><td>Marked as the version in use; exactly one version is pinned at a time.</td></tr>
+<tr><td>PASS, FAIL, HARNESS, NA</td><td>Check results: passed, failed, measurement-system failure (a data, model, or timeout error; rerun once), not applicable.</td></tr>
+<tr><td>GO, HOLD</td><td>A brief's disposition: gives its verdict, or withholds it and records why.</td></tr>
+<tr><td>defect, opportunity, DPO</td><td>A failed check, a check that could pass or fail, and defects per opportunity.</td></tr>
+<tr><td>method, material, measurement</td><td>Root-cause categories the harness may change: step order (method), what each role receives (material), in-harness checks (measurement); machine, people, and environment are fixed.</td></tr>
+<tr><td>/stages, /context_policy, /checks/...</td><td>Configuration paths a proposal may change, one per category above; for example <code>/checks/venue_match</code> switches that check on or off.</td></tr>
+<tr><td>venue_match, source_agreement, min_races_for_rate, row_evidence</td><td>Optional in-harness checks run at validation (S7), separate from the evaluator; all off in v1.</td></tr>
+<tr><td>SC, VSC</td><td>Safety car, virtual safety car.</td></tr>
+</table></div>
 </section>
 
 <section id="links">
@@ -390,16 +420,19 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 NUMBERS AND SOURCES (every number on this page)
 Build date 2026-09-26; times EDT ............ git log (commit dates, -0400)
 3 roles; Opus 5.5 / Sonnet 5 per role ........ reports/exp1.md "Split by the model that answered" (claude-opus-5-5, claude-sonnet-5); README.md
-Stages S1 to S7 ............................. CONTRACT.md section A
+Stages S1 to S7, 7 steps, X1 to X3 .......... CONTRACT.md section A
 Budgets 40 model calls, 60 tool calls, 900 s  CONTRACT.md section A; commit 1344432
 Placeholder budgets 20, 40, 600 s ........... git show 1344432 (configs/v1.json diff and message)
 8 checks E1 to E8 ........................... SPECIFICATION.md
 90% Wilson interval ("wilson_90") ........... CONTRACT.md section D
 Up to 3 changes (change_cap 3) .............. CONTRACT.md sections A and J
-R4 1.5 times ................................ SPECIFICATION.md
+5 acceptance rules; R4 1.5 times ............ SPECIFICATION.md
+5 DMAIC phases .............................. SPECIFICATION.md Purpose
 Why-chain 1 to 5 statements ................. CONTRACT.md section J
-6 cases, 2 per set .......................... README.md; reports/exp1.md
+6 cases, 2 per set; case 1 venue brief, case 2 race audit ... README.md; data/cases.json; reports/exp1.md
 Top 3 lessons (k 3) ......................... CONTRACT.md section A (context_policy lessons k 3)
+Terms: arms, snapshots, results, dispositions, cause categories, paths, optional checks off in v1
+  ........................................... CONTRACT.md sections A, B, C, G, H; SPECIFICATION.md
 384 dimensions, BAAI/bge-small-en-v1.5 ...... adaptive_harness/store/embeddings.py
 numCandidates 100 (max(100, 20*k)), limit 3 . adaptive_harness/store/mongo.py vector_search_pipeline
 Collection counts runs 53, events 2,615, harness_versions 4, lessons 3, evaluations 47, experiments 3
@@ -420,7 +453,7 @@ Commit hashes and times 14d7030 10:40, ecf78b2 10:42, 703e771 10:52, 1344432 11:
   ........................................... git log main
 exp3: R1 P1 lost E2, E3; R2 11 vs 11; R3 10 vs 10; R4 1181.9 vs 993.0 s; rejected; v1 pinned ... reports/exp3.md Acceptance rules and header
 exp3 checks passed per set 11/11/11, 10/10/10, 10/10/8 (baseline/memory_only/candidate) ... reports/exp3.md "Checks passed per case set"
-exp3 repeat: no check changed; 2 HARNESS baseline runs (P1, P2) rerun once ... reports/exp3.md Measure
+exp3 repeat: 2 development cases, no check changed; 2 HARNESS baseline runs (P1, P2) rerun once ... reports/exp3.md Measure
 exp3 history v2 and v3 rejected on R2 ....... reports/exp3.md "Proposal history shown to the improvement agent"
 row_evidence passed in all 6 candidate runs; 1 S6 message per run (no repair) ... read-only find on events of the 6 exp3 candidate runs (type check, stage S6 message), 2026-09-26 after 14:09 EDT
 "at least one" vs "every" citation .......... adaptive_harness/runner/checks.py row_evidence; adaptive_harness/evaluate/checks.py _cites_race
