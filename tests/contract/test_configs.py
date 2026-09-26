@@ -26,7 +26,7 @@ def test_v1_valid_and_baseline():
     c = load_config()
     assert c.version_id == "v1" and c.parent_id is None
     assert c.stages == ["S1", "S2a", "S2b", "S3", "S4", "S5", "S6", "S7"]
-    assert (c.budgets.max_model_calls, c.budgets.max_tool_calls, c.budgets.max_wall_seconds) == (20, 40, 600)
+    assert (c.budgets.max_model_calls, c.budgets.max_tool_calls, c.budgets.max_wall_seconds) == (40, 60, 900)
     assert c.change_cap == 3
     assert c.context_policy.lessons.k == 3
     assert c.checks.schema_.enabled and not c.checks.venue_match.enabled

@@ -14,9 +14,9 @@
     }
   },
   "budgets": {
-    "max_model_calls": 20,
-    "max_tool_calls": 40,
-    "max_wall_seconds": 600
+    "max_model_calls": 40,
+    "max_tool_calls": 60,
+    "max_wall_seconds": 900
   },
   "stages": ["S1", "S2a", "S2b", "S3", "S4", "S5", "S6", "S7"],
   "stage_catalog": {
