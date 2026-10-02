@@ -62,7 +62,7 @@ Your browser cannot play this video here. <a href="highlight.mp4">Download the v
 <button type="button" data-t="45.3">Jump to Chris at 0:45</button>
 <button type="button" data-t="61.1">Jump to Chris at 1:01</button>
 </div>
-<p class="note">Each shot lasts about one second, so the buttons start the video right at the cut. Blink and you will miss me.</p>
+<p class="note">Each shot lasts about one second in the original, so this page plays those two moments at quarter speed. The sound stretches for a few seconds while it does. <label><input type="checkbox" id="slow" checked> Slow down my two shots</label></p>
 
 <h2>Where to look</h2>
 <div class="moments">
@@ -86,6 +86,17 @@ Your browser cannot play this video here. <a href="highlight.mp4">Download the v
 <script>
 (function () {
   var v = document.getElementById('v');
+  var slow = document.getElementById('slow');
+  var shots = [[45.38, 46.20], [61.15, 62.26]];
+  function tick() {
+    var t = v.currentTime, inShot = false;
+    for (var i = 0; i < shots.length; i++) if (t >= shots[i][0] && t < shots[i][1]) inShot = true;
+    var rate = inShot && slow.checked ? 0.25 : 1;
+    if (v.playbackRate !== rate) v.playbackRate = rate;
+    if (!v.paused && !v.ended) requestAnimationFrame(tick);
+  }
+  v.addEventListener('play', tick);
+  v.addEventListener('seeked', tick);
   document.querySelectorAll('[data-t]').forEach(function (b) {
     b.addEventListener('click', function () {
       v.currentTime = parseFloat(b.getAttribute('data-t'));
