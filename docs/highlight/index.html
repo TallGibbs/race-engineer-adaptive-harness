@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hackathon highlight video: MongoDB Hackathon NYC, 2026-09-26</title>
+<meta name="description" content="The organizers' 86-second highlight video from the MongoDB hackathon in New York on 2026-09-26, with the two moments where Chris Gibbs appears.">
+<meta property="og:title" content="Hackathon highlight video">
+<meta property="og:description" content="86 seconds from the MongoDB hackathon in New York, 2026-09-26. Chris appears at 0:45 and 1:01.">
+<meta property="og:type" content="video.other">
+<meta property="og:image" content="https://tallgibbs.github.io/race-engineer-adaptive-harness/highlight/poster.jpg">
+<style>
+:root {
+  --bg: #ffffff; --fg: #1a1a1a; --muted: #555555; --line: #d0d0d0; --card: #f7f7f7;
+  --blue: #1f5fbf; --blue-bg: #dbe9ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15171a; --fg: #e6e6e6; --muted: #a8a8a8; --line: #3a3d42; --card: #1e2125;
+    --blue: #8fb4ff; --blue-bg: #1c2b45;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+h2 { font-size: 1.35rem; margin: 40px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+p { max-width: 72ch; }
+a { color: var(--blue); }
+.lede { color: var(--muted); font-size: 1.05rem; }
+.note { font-size: 0.92rem; color: var(--muted); }
+video { width: 100%; height: auto; display: block; background: #000; border-radius: 8px; margin: 20px 0 12px; }
+.jumps { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+button { font: inherit; font-weight: 600; cursor: pointer; padding: 10px 16px; min-height: 44px;
+  color: var(--blue); background: var(--blue-bg); border: 1px solid var(--blue); border-radius: 8px; }
+button:hover, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.moments { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; margin: 16px 0; }
+.moment { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.moment button { all: unset; display: block; cursor: pointer; width: 100%; }
+.moment button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.moment img { width: 100%; height: auto; display: block; }
+.moment figcaption { padding: 10px 14px 12px; font-size: 0.95rem; }
+.moment b { color: var(--blue); }
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.9rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+<h1>Hackathon highlight video</h1>
+<p class="lede">The organizers' highlight reel from the MongoDB hackathon in New York on 2026-09-26, where I built the <a href="../">Adaptive Harness</a>. It runs 1 minute 26 seconds, and I appear twice.</p>
+</header>
+
+<video id="v" controls playsinline preload="metadata" poster="poster.jpg">
+<source src="highlight.mp4" type="video/mp4">
+Your browser cannot play this video here. <a href="highlight.mp4">Download the video</a> instead.
+</video>
+
+<div class="jumps">
+<button type="button" data-t="45.3">Jump to Chris at 0:45</button>
+<button type="button" data-t="61.1">Jump to Chris at 1:01</button>
+</div>
+<p class="note">Each shot lasts about one second, so the buttons start the video right at the cut. Blink and you will miss me.</p>
+
+<h2>Where to look</h2>
+<div class="moments">
+<figure class="moment">
+<button type="button" data-t="45.3" aria-label="Play from 0:45"><img src="chris-1.jpg" width="1280" height="720" alt="Close shot of Chris, in a grey-green zip top with a name tag reading Chris, looking down at a silver laptop."></button>
+<figcaption><b>0:45</b> Close up, working at the laptop.</figcaption>
+</figure>
+<figure class="moment">
+<button type="button" data-t="61.1" aria-label="Play from 1:01"><img src="chris-2.jpg" width="1280" height="720" alt="Wide shot of a row of people on laptops along a counter. Chris is on the right, leaning over a silver laptop."></button>
+<figcaption><b>1:01</b> Wide shot of the counter. I am on the right, leaning over the silver laptop.</figcaption>
+</figure>
+</div>
+
+<h2>What I built there</h2>
+<p>An agentic engineering team inside a harness that learns from its own recorded runs and proposes changes to its own configuration, with a fixed evaluator deciding which changes are kept. The full write-up is on the <a href="../">project page</a>, and the code is in the <a href="https://github.com/TallGibbs/race-engineer-adaptive-harness">repository</a>.</p>
+
+<footer>
+<p>Video filmed and published by the event organizers, Cerebral Valley, in their public folder for the MongoDB Hackathon NYC. Shown here at 1080p, reduced from the 4K original. All rights remain with the organizers.</p>
+</footer>
+</main>
+<script>
+(function () {
+  var v = document.getElementById('v');
+  document.querySelectorAll('[data-t]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      v.currentTime = parseFloat(b.getAttribute('data-t'));
+      v.play();
+      v.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+})();
+</script>
+</body>
+</html>
