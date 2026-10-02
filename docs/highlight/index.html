@@ -93,10 +93,9 @@ Your browser cannot play this video here. <a href="highlight.mp4">Download the v
     for (var i = 0; i < shots.length; i++) if (t >= shots[i][0] && t < shots[i][1]) inShot = true;
     var rate = inShot && slow.checked ? 0.25 : 1;
     if (v.playbackRate !== rate) v.playbackRate = rate;
+    if (!v.paused && !v.ended) requestAnimationFrame(tick);
   }
-  var timer = null;
-  v.addEventListener('play', function () { tick(); if (!timer) timer = setInterval(tick, 20); });
-  v.addEventListener('pause', function () { clearInterval(timer); timer = null; });
+  v.addEventListener('play', tick);
   v.addEventListener('seeked', tick);
   document.querySelectorAll('[data-t]').forEach(function (b) {
     b.addEventListener('click', function () {
